@@ -1,12 +1,13 @@
 package scrabble;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 
 public class Serveur extends Thread{
 	private char[] plateau;
@@ -17,9 +18,6 @@ public class Serveur extends Thread{
 	//par la suite si necessaire
 	private HashMap<String,DataUser> users ;
 	private char[] tirage;
-	//j'ai besoin d'une liste pour le calcule du scores
-	//donc j'ai ajouter une liste de DataUser 
-	private ArrayList<DataUser> usersList;
 	private Phase p;
 	private int temps;
 	
@@ -31,7 +29,7 @@ public class Serveur extends Thread{
 		//pareil pour tirage, mais je crois que c'est pas forcement necessaire
 		inisializePlateau();
 		inisializeTirage();
-		usersList = new ArrayList<DataUser>();
+		//usersList = new ArrayList<DataUser>();
 		//pour la phase j'ai fait un ENUM car dans l'ennonce il nous ont donné 
 		//une liste de phase
 		p = Phase.DEB;
@@ -77,10 +75,8 @@ public class Serveur extends Thread{
 //pour calcule le score de chacun des users et c'est la ou j'ai eu besoin
 	//d'une liste, parce que sa avait l'air compliquer de parcourir un Hash
 	public String scoresString(){
-		String s = ""+usersList.size()+"*";
-		DataUser u ;
-		for(int i=0; i < usersList.size(); i++){
-			u = usersList.get(i);
+		String s = "" + this.users.size() + "*";
+		for(DataUser u: this.users.values()){
 			 s+=u.getPseudo()+"*";
 			 s+=u.getScore();
 		}
@@ -89,9 +85,9 @@ public class Serveur extends Thread{
 	//pour signaler a tout les utilisateur sauf user que qqun s'est conecter
 	public void signalement(DataUser user){
 		String userConnect = user.getPseudo();
-		for(DataUser u: usersList){
+		for(DataUser u: this.users.values()){
 			if(!u.getPseudo().equals(userConnect)){
-				u.getPlay().stringToClient("CONNECT/"+userConnect);
+				u.getPlay().stringToClient(ProtoStr.CONNECTE(userConnect));
 			}
 		}
 	}
@@ -99,9 +95,7 @@ public class Serveur extends Thread{
 	public HashMap<String, DataUser> getUsers(){
 		return users;
 	}
-	public ArrayList<DataUser> getListUsers(){
-		return usersList;
-	}
+
 	public char[] getTirage(){
 		return tirage;
 	}
@@ -115,6 +109,5 @@ public class Serveur extends Thread{
 			tirage[i] =' ';
 		}
 	}
-	
 		
 }

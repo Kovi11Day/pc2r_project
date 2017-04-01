@@ -4,11 +4,11 @@
 -methode pour parser protocol //DONE
 -recuperation des donnees entree par utilisateurs et conversion en protocol string
  *)
-
-let pseudo = ref "";;
-let sock = ThreadUnix.socket Unix.PF_INET Unix.SOCK_STREAM 0;;
+let module Client = 
+  pseudo = ref "";;
+  sock = ThreadUnix.socket Unix.PF_INET Unix.SOCK_STREAM 0;;
 let quit = ref false;;
-let pret_ecoute_serv = ref false;; 
+ 
   let proto_bilan mot vainqueure score =
     (*TODO*)
     ();;
@@ -46,26 +46,19 @@ let pret_ecoute_serv = ref false;;
     (*TODO*)
     ();;
 
-  let proto_bienvenue placement tirage  scores phase temps=
+  let proto_bienvenue placement tirage  scores =
   (*TODO*)
-    Printf.printf "BIENVENUE\n";flush(stdout);
-    Printf.printf "placement= %s\n" placement ;flush(stdout);
-    Printf.printf "tirage= %s\n" tirage ;flush(stdout);
-    Printf.printf "scores= %s\n" scores ;flush(stdout);
-    Printf.printf "phase= %s\n" phase ;flush(stdout);
-    Printf.printf "temps= %s\n" temps ;flush(stdout);
+    Printf.printf "%s%s%s\n" placement tirage scores;
+    flush(stdout);
   ;;
      
   let proto_refus () =
      Printf.printf "REFUS\n"; flush(stdout);
-     quit := true;
-     exit 1
+     quit := true
   ;;
   let proto_connecte user =
     (*TODO*)
-    Printf.printf "CONNECTE\n";flush(stdout);
-    Printf.printf "user= %s\n" user ;flush(stdout);
-  ;;
+    ();;
   let proto_connexion user =
     "CONNEXION/" ^ user ^ "/\n"
   ;;
@@ -89,39 +82,35 @@ let pret_ecoute_serv = ref false;;
   (*fonc appele par l'interface graphique quand l'utilisateur entre son pseudo et clique sur le bouton de connexion*)
 
   let serveur_A_InterfaceGraphique s =
-    (*attendre que connection soit fait avant d'écouter serveur*)
-    while not !pret_ecoute_serv do
-     ()
-    done; 
+   
     let regexpression = Str.regexp "/" in
     while not !quit do
       let protocol_recu = lecture_proto s in
       let proto_lst = Str.split regexpression protocol_recu in
       let commande_protocol = List.nth proto_lst 0 in
-      Printf.printf "client listening to server loop: recu: %s\n" commande_protocol; flush(stdout);
       match commande_protocol with
       | "BIENVENUE" ->
-         proto_bienvenue (List.nth proto_lst 1) (List.nth proto_lst 2) (List.nth proto_lst 3) (List.nth proto_lst 4) (List.nth proto_lst 5) ;
+         proto_bienvenue (List.nth proto_lst 0) (List.nth proto_lst 1) (List.nth proto_lst 2);
       | "REFUS" -> proto_refus ();
       | "CONNECTE" ->
-         proto_connecte (List.nth proto_lst 1);
-      | "DECONNEXION" -> proto_connecte (List.nth proto_lst 1);
+         proto_connecte (List.nth proto_lst 0);
+      | "DECONNEXION" -> proto_connecte (List.nth proto_lst 0);
       | "SESSION" -> proto_session ();
-      | "VAINQUEURE" -> proto_vainqueure (List.nth proto_lst 1);
+      | "VAINQUEURE" -> proto_vainqueure (List.nth proto_lst 0);
       | "TOUR" ->
-         proto_tour (List.nth proto_lst 1) (List.nth proto_lst 2);
+         proto_tour (List.nth proto_lst 0) (List.nth proto_lst 1);
       | "RVALIDE" -> proto_rvalide ();
-      | "RINVALIDE" -> proto_rinvalide (List.nth proto_lst 1);
-      | "RATROUVE" -> proto_ratrouve (List.nth proto_lst 1);
+      | "RINVALIDE" -> proto_rinvalide (List.nth proto_lst 0);
+      | "RATROUVE" -> proto_ratrouve (List.nth proto_lst 0);
       | "RFIN" -> proto_rfin ();
       | "SVALIDE" -> proto_svalide ();
-      | "SINVALIDE" -> proto_sinvalide (List.nth proto_lst 1);
+      | "SINVALIDE" -> proto_sinvalide (List.nth proto_lst 0);
       | "SFIN" -> proto_sfin ();
       | "BILAN" ->
-         proto_bilan (List.nth proto_lst 1) (List.nth proto_lst 2) (List.nth proto_lst 3);
+         proto_bilan (List.nth proto_lst 0) (List.nth proto_lst 1) (List.nth proto_lst 2);
       |some -> Printf.printf "ERROR in serveur_A_InterfaceGraphique: %s\n" commande_protocol; flush(stdout);
     done;
-     Unix.close sock
+     Unix.close sock;
   ;;
 
 
@@ -140,56 +129,34 @@ let pret_ecoute_serv = ref false;;
   (*lit continuellement sur inputstream pour voir si serveur envoie des donnees,
    parse le protocol envoyer et fait appel aux methodes adequats*)
   let connexion serv p user =
+    (*mettre a jour champ globale pseudo*)
     pseudo := user;
+    (*connexion au serveur*)
     let port_num = p and
       server = serv in
     let host = Unix.gethostbyname server in
     let h_addr = host.Unix.h_addr_list.(0) in
     let sock_addr = Unix.ADDR_INET (h_addr, port_num) in
-    (*try*)
-        Unix.connect sock sock_addr;
-   (* with
-    | Unix.Unix_error (e,_,_) ->
-      begin
-      Printf.printf "ERROR: unable to connect to server\n"; flush(stdout);
-      quit := true;
-      exit 1;
-      end;
-    |_ -> Printf.printf "ok\n";  flush(stdout);*)
-   Printf.printf "ready\n"; flush(stdout);
-       pret_ecoute_serv := true;
+    Unix.connect sock sock_addr;
+    (*(serveur_A_InterfaceGraphique sock);*)
+    (*let th = Thread.create serveur_A_InterfaceGraphique sock in*)
+    (*envoie de la protocol connexion au serveur*)
     let proto = proto_connexion user in
     send_server proto;
+    Printf.printf "in sentmsgTOserver\n"; flush(stdout)
+    (*Thread.join th;
+    Unix.close sock*)
   ;;
 
-  (*Tests*)
-  let util1 (serv, port, pseudo) =
-    (*Printf.printf "user: %s connecting\n" pseudo ; flush(stdout);*)
-    connexion serv port pseudo;
-    (*Printf.printf "user: %s is going to sleep\n" pseudo ; flush(stdout);*)
-    Thread.delay 5.;
-    (*Printf.printf "user %s is going to leave\n" pseudo; flush(stdout);*)
-    sort ()
-  ;;
-
-  let util2 (serv, port, pseudo) =
-    (*doit etre refuse--app termine*)
-    (*Printf.printf "user: %s connecting\n" pseudo ; flush(stdout);*)
-    connexion serv port pseudo;
-    (*Printf.printf "user: %s is going to sleep\n" pseudo ; flush(stdout);*)
-    Thread.delay 3.;
-    (*Printf.printf "user %s is going to leave\n" pseudo; flush(stdout);*)
-    sort ()
-  ;;
-    
+ end;;   
   let main () =
     let port = int_of_string Sys.argv.(2)
-    and serv = (Sys.argv.(1)) 
-  and testusr = (Sys.argv.(3)) in
-      match testusr with
-      |"usr1" -> (util1 (serv,port,"usr1"));
-      |"usr2" -> (util2 (serv,port,"usr2"))
-      |some -> Printf.printf "jeu de test n'existe pas\n";flush(stdout)
+    and serv = (Sys.argv.(1)) in
+    connexion serv port "kovila";
+    Printf.printf "user: %s is going to sleep\n" !pseudo ; flush(stdout);
+    Unix.sleep 5;
+    Printf.printf "user %s is going to leave\n" !pseudo; flush(stdout);
+    sort ()
   ;;
 
     main ();;

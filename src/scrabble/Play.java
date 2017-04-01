@@ -11,6 +11,8 @@ public class Play extends Thread{
 	private Socket client;
 	private PrintStream out;
 	private BufferedReader in;
+	private boolean endPlay = false;
+	DataUser user;
 	public Play (Serveur serv,Socket client){
 		this.serv = serv;
 		this.client = client;
@@ -35,8 +37,8 @@ public class Play extends Thread{
 			}
 		}else{
 			String[] protocol;
-			while(true){
-				protocol = protoRecu(); System.out.println("protocol recu:"+ protocol[0]);
+			while(!endPlay){
+				protocol = protoRecu();
 				switch (protocol[0]){
 				case "SORT": sort(); break;
 				case "TROUVE": trouve(protocol[1]);break;
@@ -47,6 +49,7 @@ public class Play extends Thread{
 	}
 	
 	public void stringToClient(String s){
+		System.out.println("protocol envoye:" + s);
 		out.println(s);
 		out.flush();
 	}
@@ -55,7 +58,8 @@ public class Play extends Thread{
 		String ligne = null;
 		try {
 			ligne = in.readLine();
-		} catch (IOException e) {e.printStackTrace();}
+			System.out.println("protocol recu: " + ligne);
+		} catch (IOException e) {e.printStackTrace();throw new RuntimeException ("prob comm btw client/server stream\n");}
 		String[] protocol = ligne.split("/");
 		return protocol;
 	}
@@ -64,13 +68,14 @@ public class Play extends Thread{
 	}
 	
 	public void sort(){
-		System.out.println("serveur recu SORT");
+		serv.getUsers().remove(this.user.getPseudo());
+		//serv.getListUsers().remove(this.user);
+		this.endPlay = true;
 	}
 	
 	public void trouve(String placement){/*TODO*/}
 	public boolean connexion(){
 			String[] connexion = protoRecu(); //j'ai factorise le code qui etait ici pour mettre dans la fonc protoRecu()
-			System.out.println("recu par client:" + connexion[0]);
 
 			if(!connexion[0].equals("CONNEXION")){
 				// on ignore
@@ -78,28 +83,25 @@ public class Play extends Thread{
 				if(connexion.length>1){
 					String pseudo = connexion[1];
 					if(serv.getUsers().containsKey(pseudo)){
-						stringToClient("REFUS/\n");
-						System.out.println("REFUS/");
-						
+						stringToClient("REFUS/\n");						
 					}else{
 						
 						String tirage = new String(serv.getTirage());
 						String plateau = new String(serv.getPlateau());
-						String bienvenue = "BIENVENUE/"+plateau+"/"+
+						/*String bienvenue = "BIENVENUE/"+plateau+"/"+
 								tirage+"/"+serv.scoresString()+"/"+
-								serv.getPhase()+"/"+serv.getTemps();
-					
+								serv.getPhase()+"/"+serv.getTemps();*/
 					
 						DataUser u = new DataUser(this,pseudo);
+						this.user = u;
 						serv.getUsers().put(pseudo,u);
-						serv.getListUsers().add(u);
-						stringToClient(bienvenue+"\n");
+						//serv.getListUsers().add(u);
+						stringToClient(ProtoStr.BIENVENUE(plateau, tirage, serv.scoresString(), serv.getPhase(), serv.getTemps()));
+						//stringToClient(bienvenue+"/\n");
 						serv.signalement(u);
-						System.out.println("message envoyer au client:" + bienvenue);
 						return true;
-					
 					}
-				}else{stringToClient("/REFUS\n");
+				}else{stringToClient("REFUS/\n");
 				
 				}
 			}
