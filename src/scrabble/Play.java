@@ -33,8 +33,17 @@ public class Play extends Thread{
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}else{
+			String[] protocol;
+			while(true){
+				protocol = protoRecu(); System.out.println("protocol recu:"+ protocol[0]);
+				switch (protocol[0]){
+				case "SORT": sort(); break;
+				case "TROUVE": trouve(protocol[1]);break;
+				default: throw new RuntimeException ("server received unknown protocol");
+			}
+			}
 		}
-		
 	}
 	
 	public void stringToClient(String s){
@@ -42,26 +51,34 @@ public class Play extends Thread{
 		out.flush();
 	}
 	
-	public boolean connexion(){
-		
+	public String[] protoRecu (){
 		String ligne = null;
 		try {
-
 			ligne = in.readLine();
-			
-			String []connexion = ligne.split("/");
+		} catch (IOException e) {e.printStackTrace();}
+		String[] protocol = ligne.split("/");
+		return protocol;
+	}
+	public void tour (){
+		//faire un nouveau tirage
+	}
+	
+	public void sort(){
+		System.out.println("serveur recu SORT");
+	}
+	
+	public void trouve(String placement){/*TODO*/}
+	public boolean connexion(){
+			String[] connexion = protoRecu(); //j'ai factorise le code qui etait ici pour mettre dans la fonc protoRecu()
+			System.out.println("recu par client:" + connexion[0]);
+
 			if(!connexion[0].equals("CONNEXION")){
 				// on ignore
-				
-				
 			}else{
-				
 				if(connexion.length>1){
-					
 					String pseudo = connexion[1];
 					if(serv.getUsers().containsKey(pseudo)){
-						
-						stringToClient("REFUS/");
+						stringToClient("REFUS/\n");
 						System.out.println("REFUS/");
 						
 					}else{
@@ -76,21 +93,20 @@ public class Play extends Thread{
 						DataUser u = new DataUser(this,pseudo);
 						serv.getUsers().put(pseudo,u);
 						serv.getListUsers().add(u);
-						stringToClient(bienvenue);
+						stringToClient(bienvenue+"\n");
 						serv.signalement(u);
-						System.out.println(bienvenue);
+						System.out.println("message envoyer au client:" + bienvenue);
 						return true;
 					
 					}
-				}else{stringToClient("/REFUS");
+				}else{stringToClient("/REFUS\n");
 				
 				}
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}	
-		return false;
-		
+		/*} catch (IOException e) {
+			e.printStackTrace();*/
+		//}	
+		return false;	
 	}
 
 }

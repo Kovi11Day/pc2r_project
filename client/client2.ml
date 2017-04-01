@@ -4,13 +4,9 @@
 -methode pour parser protocol //DONE
 -recuperation des donnees entree par utilisateurs et conversion en protocol string
  *)
-class client serveur port user =
-  object(s)
-val pseudo = user
-val port_num = port
-val serv = serveur
-val sock =  ThreadUnix.socket Unix.PF_INET Unix.SOCK_STREAM 0;
-         (*  
+let pseudo = ref "";;
+let sock = ThreadUnix.socket Unix.PF_INET Unix.SOCK_STREAM 0;;
+
   let proto_bilan mot vainqueure score =
     (*TODO*)
     ();;
@@ -55,29 +51,29 @@ val sock =  ThreadUnix.socket Unix.PF_INET Unix.SOCK_STREAM 0;
   let proto_connecte user =
     (*TODO*)
     ();;
-
+  let proto_connexion user =
+    "CONNEXION/" ^ user ^ "/\n"
+  ;;
   let proto_trouve () =
     (*TODO*)
     (*transformer tableau en string et former le protocol:
      "TROUVE/" ^ placement ^ "/"
      *)
-    "";;
+    ""
+  ;;
   let proto_sort user =
     "SORT/" ^ user ^ "/\n"
     ;;
-          *)
 
-method proto_connexion user =
-  "CONNEXION/" ^ user ^ "/\n"
-                          
-method lecture_proto stream =
-  let data_recv = Bytes.create 10000 in
+  let lecture_proto stream =
+    let data_recv = Bytes.create 10000 in
     let len = Unix.recv stream data_recv 0 10000 [] in
     String.sub data_recv 0 len;
+  ;;
 
   (*fonc appele par l'interface graphique quand l'utilisateur entre son pseudo et clique sur le bouton de connexion*)
 
-method serveur_A_InterfaceGraphique s =
+  let serveur_A_InterfaceGraphique s =
     let regexpression = Str.regexp "/" in
     while true do
       let protocol_recu = lecture_proto s in
@@ -104,34 +100,49 @@ method serveur_A_InterfaceGraphique s =
          proto_bilan (List.nth proto_lst 0) (List.nth proto_lst 1) (List.nth proto_lst 2);
       |some -> Printf.printf "ERROR in interfaceGraphique_A_Serveur\n";
     done
-  
+  ;;
+let th = Thread.create serveur_A_InterfaceGraphique sock;;
+  let send_server msg =
+    let chan_out = Unix.out_channel_of_descr sock in
+    ignore (output_string chan_out msg);
+    flush chan_out
+  ;;
+  let sort () =
+    send_server (proto_sort !pseudo);
+    Unix.close sock;
+  (*terminer thread interface graphique, terminer thread threand client*)
+  ;;
     
   (*lit continuellement sur inputstream pour voir si serveur envoie des donnees,
    parse le protocol envoyer et fait appel aux methodes adequats*)
-method connexion () =
+  let connexion serv p user =
+    (*mettre a jour champ globale pseudo*)
+    pseudo := user;
     (*connexion au serveur*)
-    sock <- ThreadUnix.socket Unix.PF_INET Unix.SOCK_STREAM 0;
+    let port_num = p and
+      server = serv in
     let host = Unix.gethostbyname server in
     let h_addr = host.Unix.h_addr_list.(0) in
     let sock_addr = Unix.ADDR_INET (h_addr, port_num) in
     Unix.connect sock sock_addr;
     (*(serveur_A_InterfaceGraphique sock);*)
-    let th = Thread.create serveur_A_InterfaceGraphique sock in
+    (*let th = Thread.create serveur_A_InterfaceGraphique sock in*)
     (*envoie de la protocol connexion au serveur*)
     let proto = proto_connexion user in
-    let chan_out = Unix.out_channel_of_descr sock in
-    ignore (output_string chan_out proto);
-    flush chan_out;
+    send_server proto;
     Printf.printf "in sentmsgTOserver\n"; flush(stdout);
-    Thread.join th;
-    Unix.close sock
- 
-end ;;
-  
+    (*Thread.join th;
+    Unix.close sock*)
+  ;;
+    
   let main () =
     let port = int_of_string Sys.argv.(2)
     and serv = (Sys.argv.(1)) in
-    (new client serv port "kovila")#connexion ()
+    connexion serv port "kovila";
+    Printf.printf "user: %s is going to sleep\n" !pseudo ; flush(stdout);
+    Unix.sleep 5;
+    Printf.printf "user %s is going to leave\n" !pseudo; flush(stdout);
+    sort ()
   ;;
 
     main ();;

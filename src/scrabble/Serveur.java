@@ -84,8 +84,7 @@ public class Serveur extends Thread{
 			 s+=u.getPseudo()+"*";
 			 s+=u.getScore();
 		}
-		return s;
-		
+		return s;	
 	}
 	//pour signaler a tout les utilisateur sauf user que qqun s'est conecter
 	public void signalement(DataUser user){
