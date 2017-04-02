@@ -11,12 +11,15 @@ public class Play extends Thread{
 	private Socket client;
 	private PrintStream out;
 	private BufferedReader in;
+
 	public Play (Serveur serv,Socket client){
 		this.serv = serv;
 		this.client = client;
 		try {
 			this.out = new PrintStream(client.getOutputStream());
-			this.in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+			this.in = new BufferedReader(new InputStreamReader
+					(client.getInputStream()));
+			
 		} catch (IOException e) {
 			
 			e.printStackTrace();
@@ -36,12 +39,14 @@ public class Play extends Thread{
 		}else{
 			String[] protocol;
 			while(true){
-				protocol = protoRecu(); System.out.println("protocol recu:"+ protocol[0]);
+				protocol = protoRecu();
+				System.out.println("protocol recu:"+protocol[0]);
 				switch (protocol[0]){
-				case "SORT": sort(); break;
-				case "TROUVE": trouve(protocol[1]);break;
-				default: throw new RuntimeException ("server received unknown protocol");
-			}
+					case "SORT": sort(protocol[1]); break;
+					case "TROUVE": trouve(protocol[1]);break;
+					default: throw new RuntimeException ("server received "
+							+ "unknown protocol");
+				}
 			}
 		}
 	}
@@ -53,23 +58,34 @@ public class Play extends Thread{
 	
 	public String[] protoRecu (){
 		String ligne = null;
+		String[] protocol =null;
 		try {
+			System.out.println("1");
 			ligne = in.readLine();
+			System.out.println("2");
+			System.out.println(ligne);
+			 protocol = ligne.split("/");
+			 System.out.println("3");
+			 System.out.println(ligne);
 		} catch (IOException e) {e.printStackTrace();}
-		String[] protocol = ligne.split("/");
+		
 		return protocol;
 	}
 	public void tour (){
 		//faire un nouveau tirage
 	}
 	
-	public void sort(){
+	public void sort(String user){
 		System.out.println("serveur recu SORT");
+		
+		deconnexion(serv.getUsers().get(user));
 	}
 	
 	public void trouve(String placement){/*TODO*/}
+	
 	public boolean connexion(){
-			String[] connexion = protoRecu(); //j'ai factorise le code qui etait ici pour mettre dans la fonc protoRecu()
+			String[] connexion = protoRecu(); //j'ai factorise le code 
+			//qui etait ici pour mettre dans la fonc protoRecu()
 			System.out.println("recu par client:" + connexion[0]);
 
 			if(!connexion[0].equals("CONNEXION")){
@@ -89,13 +105,15 @@ public class Play extends Thread{
 								tirage+"/"+serv.scoresString()+"/"+
 								serv.getPhase()+"/"+serv.getTemps();
 					
-					
+						
 						DataUser u = new DataUser(this,pseudo);
+						//signaler a tout le monde que u vient de se connecter
+						serv.signalementC(u);
+						//puis ajout de u dans le hashMap
 						serv.getUsers().put(pseudo,u);
-						serv.getListUsers().add(u);
 						stringToClient(bienvenue+"\n");
-						serv.signalement(u);
-						System.out.println("message envoyer au client:" + bienvenue);
+						System.out.println("message envoyer au client:" + 
+						bienvenue);
 						return true;
 					
 					}
@@ -108,5 +126,18 @@ public class Play extends Thread{
 		//}	
 		return false;	
 	}
+	
+	public void deconnexion(DataUser user){
+		serv.getUsers().remove(user.getPseudo());
+		serv.signalementD(user);
+		
+	}
+	
+	public boolean wordInDictionary(String mot){
+		return  serv.wordInDictinary(mot);
+		
+	}
+	
+
 
 }
