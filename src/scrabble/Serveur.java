@@ -124,8 +124,8 @@ public class Serveur extends Thread{
 		String userConnect = user.getPseudo();
 		Collection<DataUser> usersList =  users.values();
 		for(DataUser u: usersList){
-			
-				u.getPlay().stringToClient("CONNECT/"+userConnect);
+			if(!u.getPseudo().equals(userConnect))
+				u.getPlay().stringToClient("CONNECTE/"+userConnect);
 		}
 	}
 	

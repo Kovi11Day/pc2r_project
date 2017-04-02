@@ -67,7 +67,7 @@ public class Play extends Thread{
 			ligne = in.readLine();
 			System.out.println("protocol recu: " + ligne);
 		} catch (IOException e) {e.printStackTrace();throw new RuntimeException ("prob comm btw client/server stream\n");}
-		String[] protocol = ligne.split("/");
+		protocol = ligne.split("/");
 		return protocol;
 	}
 	public void tour (){
@@ -104,7 +104,7 @@ public class Play extends Thread{
 						this.user = u;
 						serv.getUsers().put(pseudo,u);
 						stringToClient(ProtoStr.BIENVENUE(plateau, tirage, serv.scoresString(), serv.getPhase(), serv.getTemps()));
-						serv.signalement(u);
+						serv.signalementC(u);
 						return true;
 					}
 				}else{stringToClient("REFUS/\n");
