@@ -3,15 +3,18 @@ package scrabble;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Scanner;
 
+import java.util.ArrayList;
 
 public class Serveur extends Thread{
 	private char[] plateau;
@@ -39,6 +42,7 @@ public class Serveur extends Thread{
 		//pareil pour tirage, mais je crois que c'est pas forcement necessaire
 		inisializePlateau();
 		inisializeTirage();
+
 		//pour la phase j'ai fait un ENUM car dans l'ennonce il nous ont donné 
 		//une liste de phase
 		p = Phase.DEB;
@@ -99,6 +103,12 @@ public class Serveur extends Thread{
 		while(i.hasNext()){
 			u = i.next();
 			s+= u.getPseudo()+"*"+u.getScore();
+		/*
+		String s = "" + this.users.size() + "*";
+		for(DataUser u: this.users.values()){
+			 s+=u.getPseudo()+"*";
+			 s+=u.getScore();
+			 */
 		}
 		return s;	
 	}
@@ -117,13 +127,19 @@ public class Serveur extends Thread{
 		Collection<DataUser> usersList = users.values();
 		for(DataUser u:usersList){
 			u.getPlay().stringToClient("DECONNEXION/"+userDisconect);
+		/*
+		for(DataUser u: this.users.values()){
+			if(!u.getPseudo().equals(userConnect)){
+				u.getPlay().stringToClient(ProtoStr.CONNECTE(userConnect));
+			}
+			*/
 		}
 	}
 	
 	public HashMap<String, DataUser> getUsers(){
 		return users;
 	}
-	
+
 	public char[] getTirage(){
 		return tirage;
 	}
@@ -137,7 +153,7 @@ public class Serveur extends Thread{
 			tirage[i] =' ';
 		}
 	}
-	
+
 	public void newSession(){
 		Collection<DataUser> usersList = users.values();
 		for(DataUser u: usersList){
@@ -182,6 +198,6 @@ public class Serveur extends Thread{
 		}
 		return false;
 	}
-	
+
 		
 }

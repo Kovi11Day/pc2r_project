@@ -12,6 +12,8 @@ public class Play extends Thread{
 	private PrintStream out;
 	private BufferedReader in;
 
+	private boolean endPlay = false;
+	DataUser user;
 	public Play (Serveur serv,Socket client){
 		this.serv = serv;
 		this.client = client;
@@ -38,9 +40,10 @@ public class Play extends Thread{
 			}
 		}else{
 			String[] protocol;
-			while(true){
+
+			while(!endPlay){
 				protocol = protoRecu();
-				System.out.println("protocol recu:"+protocol[0]);
+
 				switch (protocol[0]){
 					case "SORT": sort(protocol[1]); break;
 					case "TROUVE": trouve(protocol[1]);break;
@@ -52,6 +55,7 @@ public class Play extends Thread{
 	}
 	
 	public void stringToClient(String s){
+		System.out.println("protocol envoye:" + s);
 		out.println(s);
 		out.flush();
 	}
@@ -60,33 +64,29 @@ public class Play extends Thread{
 		String ligne = null;
 		String[] protocol =null;
 		try {
-			System.out.println("1");
 			ligne = in.readLine();
-			System.out.println("2");
-			System.out.println(ligne);
-			 protocol = ligne.split("/");
-			 System.out.println("3");
-			 System.out.println(ligne);
-		} catch (IOException e) {e.printStackTrace();}
-		
+			System.out.println("protocol recu: " + ligne);
+		} catch (IOException e) {e.printStackTrace();throw new RuntimeException ("prob comm btw client/server stream\n");}
+		String[] protocol = ligne.split("/");
 		return protocol;
 	}
 	public void tour (){
 		//faire un nouveau tirage
 	}
 	
-	public void sort(String user){
-		System.out.println("serveur recu SORT");
-		
+	public void sort(String user){		
 		deconnexion(serv.getUsers().get(user));
+		serv.getUsers().remove(this.user.getPseudo());
+		//serv.getListUsers().remove(this.user);
+		this.endPlay = true;
 	}
 	
 	public void trouve(String placement){/*TODO*/}
 	
 	public boolean connexion(){
-			String[] connexion = protoRecu(); //j'ai factorise le code 
-			//qui etait ici pour mettre dans la fonc protoRecu()
-			System.out.println("recu par client:" + connexion[0]);
+
+			String[] connexion = protoRecu(); //j'ai factorise le code qui etait ici pour mettre dans la fonc protoRecu()
+
 
 			if(!connexion[0].equals("CONNEXION")){
 				// on ignore
@@ -94,30 +94,22 @@ public class Play extends Thread{
 				if(connexion.length>1){
 					String pseudo = connexion[1];
 					if(serv.getUsers().containsKey(pseudo)){
-						stringToClient("REFUS/\n");
-						System.out.println("REFUS/");
-						
+						stringToClient("REFUS/\n");						
 					}else{
 						
 						String tirage = new String(serv.getTirage());
 						String plateau = new String(serv.getPlateau());
-						String bienvenue = "BIENVENUE/"+plateau+"/"+
-								tirage+"/"+serv.scoresString()+"/"+
-								serv.getPhase()+"/"+serv.getTemps();
 					
-						
 						DataUser u = new DataUser(this,pseudo);
-						//signaler a tout le monde que u vient de se connecter
-						serv.signalementC(u);
-						//puis ajout de u dans le hashMap
+						this.user = u;
 						serv.getUsers().put(pseudo,u);
-						stringToClient(bienvenue+"\n");
-						System.out.println("message envoyer au client:" + 
-						bienvenue);
+						//serv.getListUsers().add(u);
+						stringToClient(ProtoStr.BIENVENUE(plateau, tirage, serv.scoresString(), serv.getPhase(), serv.getTemps()));
+						//stringToClient(bienvenue+"/\n");
+						serv.signalement(u);
 						return true;
-					
 					}
-				}else{stringToClient("/REFUS\n");
+				}else{stringToClient("REFUS/\n");
 				
 				}
 			}
