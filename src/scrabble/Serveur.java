@@ -4,10 +4,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 
 public class Serveur extends Thread{
 	private char[] plateau;
@@ -16,6 +13,7 @@ public class Serveur extends Thread{
 	//DataUser est une nouvelle structure qui stock toute les donne du user
 	// c'est a dire le thread, son pseudo, son score , ... on poura rajouter 
 	//par la suite si necessaire
+	private Lettres pool;
 	private HashMap<String,DataUser> users ;
 	private char[] tirage;
 	private Phase p;
@@ -25,6 +23,7 @@ public class Serveur extends Thread{
 		this.users = new HashMap<String,DataUser>();
 		this.plateau = new char[255];
 		this.tirage = new char[7];
+		this.pool = new Lettres();
 		//j'initialise mon plateau a un plateau vide
 		//pareil pour tirage, mais je crois que c'est pas forcement necessaire
 		inisializePlateau();
@@ -92,12 +91,21 @@ public class Serveur extends Thread{
 		}
 	}
 	
+	//debut d'un nouveau tour, envoyer plateau et tirage a tout les joueurs
+	public void tour (){
+		String plateau = String.valueOf(this.getPlateau());
+		String tirage = this.pool.tirageToStr(this.pool.piocher(7));
+		for (DataUser user: this.users.values()){
+			user.getPlay().stringToClient(ProtoStr.TOUR(plateau, tirage));
+		}
+	}
+	
 	public HashMap<String, DataUser> getUsers(){
 		return users;
 	}
 
 	public char[] getTirage(){
-		return tirage;
+		return this.pool.piocher(7);
 	}
 	public void inisializePlateau(){
 		for(int i =0; i <plateau.length;i++){

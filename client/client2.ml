@@ -8,7 +8,11 @@
 let pseudo = ref "";;
 let sock = ThreadUnix.socket Unix.PF_INET Unix.SOCK_STREAM 0;;
 let quit = ref false;;
-let pret_ecoute_serv = ref false;; 
+let pret_ecoute_serv = ref false;;
+let c_placement = ref "";;
+let c_tirage = ref "";;
+let c_scores = ref "";;
+let c_phase = ref "";; 
   let proto_bilan mot vainqueure score =
     (*TODO*)
     ();;
@@ -47,13 +51,17 @@ let pret_ecoute_serv = ref false;;
     ();;
 
   let proto_bienvenue placement tirage  scores phase temps=
-  (*TODO*)
     Printf.printf "BIENVENUE\n";flush(stdout);
     Printf.printf "placement= %s\n" placement ;flush(stdout);
     Printf.printf "tirage= %s\n" tirage ;flush(stdout);
     Printf.printf "scores= %s\n" scores ;flush(stdout);
     Printf.printf "phase= %s\n" phase ;flush(stdout);
     Printf.printf "temps= %s\n" temps ;flush(stdout);
+    c_placement := placement;
+    c_tirage := tirage;
+    c_scores := scores;
+    c_phase := phases;
+    c_temps := temps
   ;;
      
   let proto_refus () =

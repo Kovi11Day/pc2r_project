@@ -7,4 +7,7 @@ public class ProtoStr {
 	public static String CONNECTE (String user){
 		return "CONNECTE/" + user + "/\n";
 	}
+	public static String TOUR (String plateau, String tirage){
+		return "TOUR/" + plateau + "/" + tirage + "/\n";
+	}
 }

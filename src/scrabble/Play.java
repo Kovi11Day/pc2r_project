@@ -88,16 +88,11 @@ public class Play extends Thread{
 						
 						String tirage = new String(serv.getTirage());
 						String plateau = new String(serv.getPlateau());
-						/*String bienvenue = "BIENVENUE/"+plateau+"/"+
-								tirage+"/"+serv.scoresString()+"/"+
-								serv.getPhase()+"/"+serv.getTemps();*/
 					
 						DataUser u = new DataUser(this,pseudo);
 						this.user = u;
 						serv.getUsers().put(pseudo,u);
-						//serv.getListUsers().add(u);
 						stringToClient(ProtoStr.BIENVENUE(plateau, tirage, serv.scoresString(), serv.getPhase(), serv.getTemps()));
-						//stringToClient(bienvenue+"/\n");
 						serv.signalement(u);
 						return true;
 					}
