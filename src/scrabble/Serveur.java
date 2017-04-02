@@ -22,15 +22,19 @@ public class Serveur extends Thread{
 	private char[] plateau;
 	private static final int port =2017 ;
 	private ServerSocket ecoute;
+	
 	//DataUser est une nouvelle structure qui stock toute les donne du user
 	// c'est a dire le thread, son pseudo, son score , ... on poura rajouter 
 	//par la suite si necessaire
 	private Lettres pool;
 	private HashMap<String,DataUser> users ;
+	
+	//voir explication dans la classe ControlleurJeu
+	private Integer condControlleurEnAttente = new Integer(0);
 	private char[] tirage;
 	private Phase p;
 	private int temps;
-	private int nbJoueurs;
+	//private int nbJoueurs;
 	//soi le serveur a le dico soit c chaque thread Play qui a un dico
 	//j'ai choisit Serveur qui a le dico mais dit moi si c'est mieu que 
 	//ca soi Play qui possede le dico
@@ -42,9 +46,9 @@ public class Serveur extends Thread{
 		this.tirage = new char[7];
 
 		this.pool = new Lettres();
-
-		this.nbJoueurs = users.size();
-
+		
+		//this.nbJoueurs = users.size();
+		
 		//j'initialise mon plateau a un plateau vide
 		//pareil pour tirage, mais je crois que c'est pas forcement necessaire
 		inisializePlateau();
@@ -55,6 +59,7 @@ public class Serveur extends Thread{
 		p = Phase.DEB;
 		dico = new Dictionnaire();
 		temps = 0;
+		new ControlleurJeu(this);
 		try {
 			this.ecoute = new ServerSocket(port);
 			
@@ -64,17 +69,24 @@ public class Serveur extends Thread{
 		
 		this.start();
 	}
+	public void initJeu(){
+		//TODO: initialise phase..et tout autre choses
+		//TODO: initialise scores
+		inisializePlateau();
+		inisializeTirage();
+		this.pool.initialise(Lettres.poolFrancais());
+	}
 	
 	public void run (){
+		int atPre_nbJoueurs;
 		while(true){
 			try {
 				Socket client = ecoute.accept();
+				atPre_nbJoueurs = this.users.size();
 				Play p = new Play(this,client);
-				//j'ai beaucoup hesite je crois qu'il faut un autre thread qui 
-				//va lancer le jeu avec le session les tour ect
-				if(nbJoueurs ==1){
-					Jouer j = new Jouer(this);
-					
+				if(atPre_nbJoueurs == 0){
+					//Jouer j = new Jouer(this);
+					this.condControlleurEnAttente.notify();
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -175,7 +187,6 @@ public class Serveur extends Thread{
 		for(DataUser u: usersList){
 			u.getPlay().stringToClient("SESSION/");
 		}
-		
 	}
 	
 	public void endSession(){
@@ -185,11 +196,11 @@ public class Serveur extends Thread{
 			u.getPlay().stringToClient("VAINQUEUR/"+bilan);
 		}
 	}
-	
+	/*
 	public int getNbJoueurs(){
 		return nbJoueurs;
 	}
-	
+	*/
 	public void Jeu (){
 		newSession();
 		
@@ -215,5 +226,11 @@ public class Serveur extends Thread{
 		return false;
 	}
 
-		
+	public Integer getCondControlleurEnAttente	(){
+		return this.condControlleurEnAttente;
+	}
+	
+	public Lettres getPool(){
+		return this.pool;
+	}
 }

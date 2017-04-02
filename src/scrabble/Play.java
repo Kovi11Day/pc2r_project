@@ -77,11 +77,15 @@ public class Play extends Thread{
 	public void sort(String user){		
 		deconnexion(serv.getUsers().get(user));
 		serv.getUsers().remove(this.user.getPseudo());
-		//serv.getListUsers().remove(this.user);
+		//if nb serv.getUsers().size == 0; notify thread waiting on condition
 		this.endPlay = true;
 	}
 	
-	public void trouve(String placement){/*TODO*/}
+	public void trouve(String placement){/*TODO*/
+		//verifier mot valide
+		//si non ...
+		//si oui notifier serveur
+	}
 	
 	public boolean connexion(){
 

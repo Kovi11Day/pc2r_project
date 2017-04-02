@@ -24,8 +24,10 @@ public class Lettres {
 			}
 		}
 	}
-
-	private static String[][][] poolFrancais(){
+	public boolean isEmpty(){
+		return this.frequence.size() == 0;
+	}
+	public static String[][][] poolFrancais(){
 		/*format:
 		 * {
 		 * 		{ {point}, {lettre1, frequence1},... ,{lettreN, frequenceN}},..
