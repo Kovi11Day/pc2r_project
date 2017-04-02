@@ -11,6 +11,7 @@ public class Play extends Thread{
 	private Socket client;
 	private PrintStream out;
 	private BufferedReader in;
+
 	private boolean endPlay = false;
 	DataUser user;
 	public Play (Serveur serv,Socket client){
@@ -18,7 +19,9 @@ public class Play extends Thread{
 		this.client = client;
 		try {
 			this.out = new PrintStream(client.getOutputStream());
-			this.in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+			this.in = new BufferedReader(new InputStreamReader
+					(client.getInputStream()));
+			
 		} catch (IOException e) {
 			
 			e.printStackTrace();
@@ -37,13 +40,16 @@ public class Play extends Thread{
 			}
 		}else{
 			String[] protocol;
+
 			while(!endPlay){
 				protocol = protoRecu();
+
 				switch (protocol[0]){
-				case "SORT": sort(); break;
-				case "TROUVE": trouve(protocol[1]);break;
-				default: throw new RuntimeException ("server received unknown protocol");
-			}
+					case "SORT": sort(protocol[1]); break;
+					case "TROUVE": trouve(protocol[1]);break;
+					default: throw new RuntimeException ("server received "
+							+ "unknown protocol");
+				}
 			}
 		}
 	}
@@ -56,6 +62,7 @@ public class Play extends Thread{
 	
 	public String[] protoRecu (){
 		String ligne = null;
+		String[] protocol =null;
 		try {
 			ligne = in.readLine();
 			System.out.println("protocol recu: " + ligne);
@@ -67,15 +74,19 @@ public class Play extends Thread{
 		//faire un nouveau tirage
 	}
 	
-	public void sort(){
+	public void sort(String user){		
+		deconnexion(serv.getUsers().get(user));
 		serv.getUsers().remove(this.user.getPseudo());
 		//serv.getListUsers().remove(this.user);
 		this.endPlay = true;
 	}
 	
 	public void trouve(String placement){/*TODO*/}
+	
 	public boolean connexion(){
+
 			String[] connexion = protoRecu(); //j'ai factorise le code qui etait ici pour mettre dans la fonc protoRecu()
+
 
 			if(!connexion[0].equals("CONNEXION")){
 				// on ignore
@@ -105,5 +116,18 @@ public class Play extends Thread{
 		//}	
 		return false;	
 	}
+	
+	public void deconnexion(DataUser user){
+		serv.getUsers().remove(user.getPseudo());
+		serv.signalementD(user);
+		
+	}
+	
+	public boolean wordInDictionary(String mot){
+		return  serv.wordInDictinary(mot);
+		
+	}
+	
+
 
 }
