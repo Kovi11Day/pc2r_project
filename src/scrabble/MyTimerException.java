@@ -1,6 +1,6 @@
 package scrabble;
 
-public class MyTimerException extends InterruptedException{
+public class MyTimerException extends Exception{
 	public MyTimerException(){
 		super();
 	}

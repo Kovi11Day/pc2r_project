@@ -12,7 +12,8 @@ let pret_ecoute_serv = ref false;;
 let c_placement = ref "";;
 let c_tirage = ref "";;
 let c_scores = ref "";;
-let c_phase = ref "";; 
+let c_phase = ref "";;
+let c_temps = ref "";;
   let proto_bilan mot vainqueure score =
     (*TODO*)
     ();;
@@ -48,7 +49,9 @@ let c_phase = ref "";;
     ();;
   let proto_deconnexion user =
     (*TODO*)
-    ();;
+        Printf.printf "DECONNEXION\n";flush(stdout);
+        Printf.printf "user= %s\n" user ;flush(stdout)
+        ;;
 
   let proto_bienvenue placement tirage  scores phase temps=
     Printf.printf "BIENVENUE\n";flush(stdout);
@@ -60,7 +63,7 @@ let c_phase = ref "";;
     c_placement := placement;
     c_tirage := tirage;
     c_scores := scores;
-    c_phase := phases;
+    c_phase := phase;
     c_temps := temps
   ;;
      
@@ -113,7 +116,7 @@ let c_phase = ref "";;
       | "REFUS" -> proto_refus ();
       | "CONNECTE" ->
          proto_connecte (List.nth proto_lst 1);
-      | "DECONNEXION" -> proto_connecte (List.nth proto_lst 1);
+      | "DECONNEXION" -> proto_deconnexion (List.nth proto_lst 1);
       | "SESSION" -> proto_session ();
       | "VAINQUEURE" -> proto_vainqueure (List.nth proto_lst 1);
       | "TOUR" ->

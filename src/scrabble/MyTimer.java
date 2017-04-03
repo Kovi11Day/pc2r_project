@@ -67,7 +67,7 @@ public class MyTimer extends Thread{
 		Sync.notify(condTimer);
 	}
 	//can only be called if thread isBusy
-	public void cancel(){
+	public void disactivate(){
 		if (isBusy){	
 			this.isCancelled = true;
 			this.interrupt();
@@ -76,12 +76,16 @@ public class MyTimer extends Thread{
 	
 	public void destroy(){
 		this.destroy = true;
-		cancel();//assurer etat IDLE
+		disactivate();//assurer etat IDLE
 		isCancelled = true; //assurer qu'il ne fait pas notify
 		Sync.notify(condTimer);
 	}
 	public Integer getCondAttente(){
 		return this.condTimer;
+	}
+	
+	public boolean isBusy(){
+		return this.isBusy;
 	}
 	//test timer
 	public static void main(String[] args){
@@ -97,7 +101,7 @@ public class MyTimer extends Thread{
 			System.out.println("ACTIVATING TIMER");System.out.flush();
 			timer.activateSecs(5); 
 			System.out.println("CANCELLING TIMER");System.out.flush();
-			timer.cancel();
+			timer.disactivate();
 			//After cancel do not start same timer immediately
 			//give it some time to reinit
 			sleep(2); 

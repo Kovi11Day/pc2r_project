@@ -10,4 +10,10 @@ public class ProtoStr {
 	public static String TOUR (String plateau, String tirage){
 		return "TOUR/" + plateau + "/" + tirage + "/\n";
 	}
+	public static String RFIN (){
+		return "RFIN/\n";
+	}
+	public static String RATROUVE (String user){
+		return "RATROUVE/" + user + "/\n";
+	}
 }

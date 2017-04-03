@@ -31,6 +31,7 @@ public class Serveur extends Thread{
 	
 	//voir explication dans la classe ControlleurJeu
 	private Integer condControlleurEnAttente = new Integer(0);
+	private Integer condNbJoueurs = new Integer(0);
 	private char[] tirage;
 	private Phase p;
 	private int temps;
@@ -82,12 +83,8 @@ public class Serveur extends Thread{
 		while(true){
 			try {
 				Socket client = ecoute.accept();
-				atPre_nbJoueurs = this.users.size();
 				Play p = new Play(this,client);
-				if(atPre_nbJoueurs == 0){
-					//Jouer j = new Jouer(this);
-					this.condControlleurEnAttente.notify();
-				}
+				//Jouer j = new Jouer(this);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -97,7 +94,9 @@ public class Serveur extends Thread{
 	public Phase getPhase(){
 		return p;
 	}
-	
+	public void setPhase(Phase p){
+		this.p = p;
+	}
 	public int getTemps(){
 		return temps;
 	}
@@ -167,9 +166,12 @@ public class Serveur extends Thread{
 	public HashMap<String, DataUser> getUsers(){
 		return users;
 	}
-
-	public char[] getTirage(){
-		return this.pool.piocher(7);
+	//si faux est retourné alors c'est la fin du jeu
+	public boolean nouveauTirage(){
+		if (this.pool.isEmpty())
+			return false;
+		this.tirage = this.pool.piocher(7);
+		return true;
 	}
 	public void inisializePlateau(){
 		for(int i =0; i <plateau.length;i++){
@@ -181,7 +183,9 @@ public class Serveur extends Thread{
 			tirage[i] =' ';
 		}
 	}
-
+	public char[] getTirage (){
+		return this.tirage;
+	}
 	public void newSession(){
 		Collection<DataUser> usersList = users.values();
 		for(DataUser u: usersList){
@@ -196,14 +200,12 @@ public class Serveur extends Thread{
 			u.getPlay().stringToClient("VAINQUEUR/"+bilan);
 		}
 	}
-	/*
+
 	public int getNbJoueurs(){
-		return nbJoueurs;
+		return this.users.size();
 	}
-	*/
 	public void Jeu (){
 		newSession();
-		
 	}
 	
 	public boolean wordInDictinary(String mot){
@@ -229,7 +231,9 @@ public class Serveur extends Thread{
 	public Integer getCondControlleurEnAttente	(){
 		return this.condControlleurEnAttente;
 	}
-	
+	public Integer getCondNbJoueurs(){
+		return this.condNbJoueurs;
+	}
 	public Lettres getPool(){
 		return this.pool;
 	}

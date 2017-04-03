@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
  * thread d'un Play va le reveiller:
  * EN TOUT DEBUT:
  * +thead Controlleur attends tant qu'il n'y a pas de jouueur connecté
- * -thread Serveur fait notify lorsqu'un joueur se connecte
+ * -thread Play fait notify lorsqu'un joueur est connecte (protocol CONNECTE envoyé)
  * PHASE RECHERCHE: 
  * +thread Controlleur lance timer de 5min et attends
  * -thread serveur fait notify au cas ou tout les utilisateurs se sont déconnecté auquel cas le Controlleur
@@ -28,50 +28,124 @@ import java.util.concurrent.TimeUnit;
  * -timer fait notify, quand le temps c'est ecrouler
  * */
 public class ControlleurJeu extends Thread{
-	private final long DELAY_PH_RECHERCHE = TimeUnit.MINUTES.toMillis(5);
-	private final long DELAY_PH_SOUMISSION = TimeUnit.MINUTES.toMillis(2);
-	private final long DELAY_PH_RESULTATS = TimeUnit.SECONDS.toMillis(10);
-	private final long DELAY_DEBUT_SESSION = TimeUnit.SECONDS.toMillis(20);
-
-	//private Integer condTimer; //moniteur pour attente du timer
+	private final long DELAY_PH_RECHERCHE = 5; //mins
+	private final long DELAY_PH_SOUMISSION = 2;//mins
+	private final long DELAY_PH_RESULTATS = 10; //secs
+	private final long DELAY_DEBUT_SESSION = 20; //secs
+	
 	private MyTimer timer;
 	private Serveur serveur;
-	//private Timer timer; //TODO: a enlever
-	private TimerTask timerTask;
 	public ControlleurJeu(Serveur serveur){
 		this.serveur = serveur;
 		this.timer = new MyTimer(serveur.getCondControlleurEnAttente());
-		//timer = new Timer();
 		this.start();
 	}
-	public void initTimerTask(){
-		timerTask = new TimerTask(){
-			public void run(){
-				serveur.getCondControlleurEnAttente().notify();
+
+	public void run (){
+		//phase debut
+		lanceJeu();
+	}
+	
+	public void lanceJeu(){
+		boolean timerExpirer;
+		while(true){
+			switch(serveur.getPhase()){
+			case DEB:
+				//attends qu'au moins un joueur se connecte
+				try {
+					//notify correspondant dans: Play.connexion()
+					Sync.wait(serveur.getCondNbJoueurs());
+				} catch (InterruptedException e) {}
+				//attente 20s avant de commencer session
+				try {
+					this.timer.activateSecs(DELAY_DEBUT_SESSION);
+					//notify: timer, Play.deconnexion()
+					Sync.wait(serveur.getCondControlleurEnAttente());
+				} catch (MyTimerException e) {e.printStackTrace();}
+					catch (InterruptedException e) {}
+				this.timer.disactivate(); 
+				if (serveur.getNbJoueurs() == 0){
+					serveur.initJeu();
+					serveur.setPhase(Phase.DEB);
+				}else{
+					serveur.newSession(); //proto_SESSION
+					serveur.setPhase(Phase.REC);
+				}
+				break;
+			case REC:
+				serveur.tour(); //proto_TOUR
+				try {
+					this.timer.activateMins(DELAY_PH_RECHERCHE);
+					//notify: timer, Play.deconnexion(), Play.trouve()
+					Sync.wait(serveur.getCondControlleurEnAttente());
+				} catch (MyTimerException e) {e.printStackTrace();}
+					catch (InterruptedException e) {}
+					timerExpirer = !timer.isBusy();
+					timer.disactivate(); 
+				if (serveur.getNbJoueurs() == 0){
+					serveur.initJeu();
+					serveur.setPhase(Phase.DEB);
+				}else if (timerExpirer){
+					if (!serveur.nouveauTirage()){//Si plus de lettres restant
+						serveur.endSession();//proto_VAINQUEURE
+						serveur.initJeu();
+						serveur.setPhase(Phase.DEB);
+					}else{
+					//TODO: appel fonc proto_RFIN() ou equivalent
+						serveur.setPhase(Phase.REC);
+					}
+				}else{
+					//TODO: appel fonc proto_RATROUVE(user) ou equivalent
+					serveur.setPhase(Phase.SOU);
+				}
+				break;
+			case SOU:
+				try {
+					this.timer.activateMins(this.DELAY_PH_SOUMISSION);
+					//notify: timer, Play.deconnexion()
+					Sync.wait(serveur.getCondControlleurEnAttente());
+				} catch (MyTimerException e) {e.printStackTrace();}
+					catch (InterruptedException e) {}
+				this.timer.disactivate(); 
+				if (serveur.getNbJoueurs() == 0){
+					serveur.initJeu();
+					serveur.setPhase(Phase.DEB);
+				}else{
+					//TODO: appel fonc proto_SFIN() ou equivalent
+					serveur.setPhase(Phase.RES);
+				}
+				break;
+			case RES:
+				//TODO: appel fonc proto_BILAN(mot,vainqueures, scores) ou equivalent
+				try {
+					this.timer.activateSecs(this.DELAY_PH_RESULTATS);
+					//notify: timer, Play.deconnexion()
+					Sync.wait(serveur.getCondControlleurEnAttente());
+				} catch (MyTimerException e) {e.printStackTrace();}
+					catch (InterruptedException e) {}
+				this.timer.disactivate(); 
+				if (serveur.getNbJoueurs() == 0){
+					serveur.initJeu();
+					serveur.setPhase(Phase.DEB);
+				}else{
+					serveur.setPhase(Phase.REC);
+				}
+				break;
 			}
-		};
-	}
-	public void debutSession (){
-		//attends qu'au moins un joueur se connecte
-			try {
-					serveur.getCondControlleurEnAttente().wait();
-			} catch (InterruptedException e) {}
-		//attente 20s avant de commencer session
-			
-		//commencer session	
-			this.serveur.newSession();
-			jouer();
-	}
-	public void phaseRecherche(){
-		serveur.tour();
-	}
-	public void jouer(){
-		while (!serveur.getPool().isEmpty() && serveur.getUsers().size()>0){
-			phaseRecherche();
 		}
 	}
-	public void run (){
-		initTimerTask();
-		debutSession();
+
+
+	public static void main (String[] args) {
+		//test case with enum
+		Phase p = Phase.DEB;
+		for(int i = 0 ; i < 8 ; i++){
+		switch(p){
+		case DEB: System.out.println(p.toString()); p = Phase.REC; break;
+		case REC: System.out.println(p.toString()); p = Phase.SOU; break;
+		case SOU: System.out.println(p.toString()); p = Phase.RES; break;
+		case RES: System.out.println(p.toString()); p = Phase.DEB; break;
+		}
+		}
 	}
 }
