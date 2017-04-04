@@ -1,6 +1,5 @@
 package scrabble;
 
-
 import java.util.HashSet;
 
 public class EssaiPlateau {
@@ -8,7 +7,6 @@ public class EssaiPlateau {
 	public static void main (String args[]){
 		char[][]pServ = new char[15][15];
 		char[][] pClient = new char[15][15];
-
 		char[][] pClient2 = new char[15][15];
 		char[][] pClient3 = new char[15][15];
 		setPlateauClientv2(pClient2);
@@ -29,14 +27,12 @@ public class EssaiPlateau {
 			e.printStackTrace();
 		}
 	}
-
 	public static void setPlateauServ(char[][] plateau2D){
-		for(int i =0;i<15;i++){
-			for(int j =0;j<15;j++){
-				plateau2D[j][i] = ' ';
+			for(int i =0;i<15;i++){
+				for(int j =0;j<15;j++){
+					plateau2D[j][i] = ' ';
+				}
 			}
-		}
-
 		plateau2D[0][0]='s';
 		plateau2D[1][0]='a';
 		plateau2D[2][0]='r';
@@ -48,12 +44,11 @@ public class EssaiPlateau {
 		plateau2D[4][4]='l';
 	}
 	public static void setPlateauClient(char[][] plateau2D){
-
-		for(int i =0;i<15;i++){
-			for(int j =0;j<15;j++){
-				plateau2D[j][i] = ' ';
+			for(int i =0;i<15;i++){
+				for(int j =0;j<15;j++){
+					plateau2D[j][i] = ' ';
+				}
 			}
-		}
 		plateau2D[0][0]='s';
 		plateau2D[1][0]='a';
 		plateau2D[2][0]='r';
@@ -118,8 +113,6 @@ public class EssaiPlateau {
 	plateau2D[5][3]='o';
 	plateau2D[5][4]='t';
 	}
-
-
 	public static String toStringPlateau(char[][] p){
 		String tab = "";
 		
@@ -131,7 +124,6 @@ public class EssaiPlateau {
 		}
 		return tab;
 	}
-
 	
 	//pour trouver le mot que l'utilisateur a entre , a retiré???
 	//
@@ -151,21 +143,13 @@ public class EssaiPlateau {
 				c ++;
 			}
 			if(c>14){c=0;}
-				if(pServ[c][l]!=pClient[c][l]){
-					break;
-				}
-				c ++;
-			}
-
 			if(pServ[c][l]!=pClient[c][l]){
 				break;
 			}
 			l++;
 		}
 		
-
 		if(l==15){ return "";}
-
 		for(int i = 0; i <=l;i++){
 			mot+=pClient[c][i];
 			if(pClient[c][i]== ' '){
@@ -175,12 +159,10 @@ public class EssaiPlateau {
 
 		int i=l+1;
 		while(i<15 && pClient[c][i]!=' '){
-		
 			mot+=pClient[c][i];
 			i++;
 		}
 		
-
 		if(mot.length()>2){
 			return mot;
 		}
@@ -191,8 +173,6 @@ public class EssaiPlateau {
 			}
 		}
 		int j=c+1;
-	
-
 		while(pClient[j][l]!=' ' && j<15){
 			mot+=pClient[j][l];
 			j++;
@@ -201,7 +181,6 @@ public class EssaiPlateau {
 		return mot;
 		
 	}
-
 	
 	public static HashSet<String> mot(char[][] pClient,char[][] pServ) 
 			throws PlateauException{
@@ -296,6 +275,5 @@ public class EssaiPlateau {
 		}
 		return mot;
 	}
-
 
 }
