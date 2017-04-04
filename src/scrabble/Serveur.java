@@ -3,23 +3,18 @@ package scrabble;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Scanner;
-
 import java.util.ArrayList;
 
 
 public class Serveur extends Thread{
-	private char[] plateau;
 	private static final int port =2017 ;
 	private ServerSocket ecoute;
 	
@@ -28,7 +23,9 @@ public class Serveur extends Thread{
 	//par la suite si necessaire
 	private Lettres pool;
 	private HashMap<String,DataUser> users ;
-	
+	//le seul plateau que l'on a est un String
+	//j'ai fait les fonction pour convertir string en char[][] et inversement
+	private String plateau;
 	//voir explication dans la classe ControlleurJeu
 	private Integer condControlleurEnAttente = new Integer(0);
 	private char[] tirage;
@@ -42,16 +39,14 @@ public class Serveur extends Thread{
 	
 	public Serveur(){
 		this.users = new HashMap<String,DataUser>();
-		this.plateau = new char[255];
 		this.tirage = new char[7];
-
 		this.pool = new Lettres();
-		
+		plateau = char2DtoString(inisializePlateau(new char[15][15]));
 		//this.nbJoueurs = users.size();
 		
 		//j'initialise mon plateau a un plateau vide
 		//pareil pour tirage, mais je crois que c'est pas forcement necessaire
-		inisializePlateau();
+		
 		inisializeTirage();
 
 		//pour la phase j'ai fait un ENUM car dans l'ennonce il nous ont donné 
@@ -72,7 +67,6 @@ public class Serveur extends Thread{
 	public void initJeu(){
 		//TODO: initialise phase..et tout autre choses
 		//TODO: initialise scores
-		inisializePlateau();
 		inisializeTirage();
 		this.pool.initialise(Lettres.poolFrancais());
 	}
@@ -108,7 +102,7 @@ public class Serveur extends Thread{
 		out.flush();
 	}
 	
-	public char[] getPlateau(){
+	public String getPlateau(){
 		return plateau;
 	}
 	
@@ -122,12 +116,7 @@ public class Serveur extends Thread{
 		while(i.hasNext()){
 			u = i.next();
 			s+= u.getPseudo()+"*"+u.getScore();
-		/*
-		String s = "" + this.users.size() + "*";
-		for(DataUser u: this.users.values()){
-			 s+=u.getPseudo()+"*";
-			 s+=u.getScore();
-			 */
+		
 		}
 		return s;	
 	}
@@ -137,7 +126,8 @@ public class Serveur extends Thread{
 		Collection<DataUser> usersList =  users.values();
 		for(DataUser u: usersList){
 			if(!u.getPseudo().equals(userConnect))
-				u.getPlay().stringToClient("CONNECTE/"+userConnect);
+				//u.getPlay().stringToClient("CONNECTE/"+userConnect);
+				u.getPlay().getProtoStr().CONNECTE(userConnect);
 		}
 	}
 	
@@ -145,7 +135,8 @@ public class Serveur extends Thread{
 		String userDisconect = user.getPseudo();
 		Collection<DataUser> usersList = users.values();
 		for(DataUser u:usersList){
-			u.getPlay().stringToClient("DECONNEXION/"+userDisconect);
+			//u.getPlay().stringToClient("DECONNEXION/"+userDisconect);
+			u.getPlay().getProtoStr().DECONNEXION(userDisconect);
 		/*
 		for(DataUser u: this.users.values()){
 			if(!u.getPseudo().equals(userConnect)){
@@ -155,12 +146,22 @@ public class Serveur extends Thread{
 		}
 	}
 	
+	public void signalementT(DataUser user){
+		Collection<DataUser> usersList = users.values();
+		for(DataUser u:usersList){
+			if(user.getPseudo() != u.getPseudo()){
+				u.getPlay().getProtoStr().RATROUVE(user.getPseudo());
+			}
+		}
+	}
+	
 	//debut d'un nouveau tour, envoyer plateau et tirage a tout les joueurs
 	public void tour (){
 		String plateau = String.valueOf(this.getPlateau());
 		String tirage = this.pool.tirageToStr(this.pool.piocher(7));
 		for (DataUser user: this.users.values()){
-			user.getPlay().stringToClient(ProtoStr.TOUR(plateau, tirage));
+			//user.getPlay().stringToClient(ProtoStr.TOUR(plateau, tirage));
+			user.getPlay().getProtoStr().TOUR(plateau, tirage);
 		}
 	}
 	
@@ -171,10 +172,13 @@ public class Serveur extends Thread{
 	public char[] getTirage(){
 		return this.pool.piocher(7);
 	}
-	public void inisializePlateau(){
+	public char[][] inisializePlateau(char[][] plateau){
 		for(int i =0; i <plateau.length;i++){
-			plateau[i]=' ';
+			for(int j =0; j<plateau[i].length;j++){
+				plateau[j][i]=' ';
+			}
 		}
+		return plateau;
 	}
 	public void inisializeTirage(){
 		for(int i =0; i <tirage.length;i++){
@@ -185,7 +189,9 @@ public class Serveur extends Thread{
 	public void newSession(){
 		Collection<DataUser> usersList = users.values();
 		for(DataUser u: usersList){
-			u.getPlay().stringToClient("SESSION/");
+			//u.getPlay().stringToClient("SESSION/");
+			u.getPlay().getProtoStr().SESSION();
+			
 		}
 	}
 	
@@ -193,7 +199,9 @@ public class Serveur extends Thread{
 		Collection<DataUser> usersList = users.values();
 		String bilan = scoresString();
 		for(DataUser u: usersList){
-			u.getPlay().stringToClient("VAINQUEUR/"+bilan);
+			//u.getPlay().stringToClient("VAINQUEUR/"+bilan);
+			u.getPlay().getProtoStr().VAINQUEUR(bilan);
+			
 		}
 	}
 	/*
@@ -233,4 +241,35 @@ public class Serveur extends Thread{
 	public Lettres getPool(){
 		return this.pool;
 	}
+	
+	public void setPlateau(String newPlateau){
+		this.plateau = newPlateau;
+	}
+	
+	public char[][] stringToChar2D(String plateau) throws PlateauException{
+			if(plateau.length()!=225){
+				throw new PlateauException();
+			}
+			char[][] pClient = new char[15][15];
+			for(int i =0; i <15;i++){
+				for(int j =0; j< 15;j++){
+					pClient[j][i]=plateau.charAt(i*15+j);
+				}
+			}
+			
+			return pClient;
+	
+	}
+	
+	public String char2DtoString(char[][] plateau){
+		String plateauString = "";
+		for(int i =0;i <plateau.length;i++){
+			for(int j =0; j< plateau[i].length;j++){
+				plateauString+= plateau[j][i];
+			}
+		}
+		return plateauString;
+	}
+	
+	
 }
