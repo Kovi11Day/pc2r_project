@@ -1,4 +1,6 @@
-(*ocamlfind ocamlc -w -g -package lablgtk2 -linkpkg unix.cma str.cma interfaceGraphique.ml -o interfaceGraphique*)
+(*ocamlfind ocamlc -w -g -thread -package lablgtk2 -linkpkg unix.cma threads.cma str.cma interfaceGraphique.ml -cclib -lthreads -lunix -o interfaceGraphique*)
+(*module InterfaceGraphique =
+  struct*)
 let _ = GMain.init ()
 
 (* Fenêtre principale. *)
@@ -14,14 +16,23 @@ let window = GWindow.window
   ~border_width:10
   ~packing:window#add ()*)
 
-let base = GPack.table
+let base_area = GPack.table
   ~columns:2
-  ~rows:2             
+  ~rows:2
+  ~border_width:10
   ~row_spacings:20
   ~col_spacings:20
   ~homogeneous:true
   ~packing:window#add()  
 
+let comm_area = GPack.table
+  ~columns:2
+  ~rows:2
+  ~border_width:10
+  ~row_spacings:20
+  ~col_spacings:20
+  ~homogeneous:true
+  ~packing:(base_area#attach ~left:1 ~top:0) ()
 
 let vplacement = GPack.table
   ~columns:3
@@ -29,8 +40,8 @@ let vplacement = GPack.table
   ~row_spacings:0
   ~col_spacings:0
   ~homogeneous:true 
-  ~packing:(base#attach ~left:0 ~top:0) ()
-   (* in base#attach ~left:0 ~top:0 (vplacement#corerce)*)
+  ~packing:(base_area#attach ~left:0 ~top:0) ()
+   (* in base_area#attach ~left:0 ~top:0 (vplacement#corerce)*)
 
   
 (*conteneur pour grille de tirage*)
@@ -41,8 +52,14 @@ let vtirage = GPack.table
   ~row_spacings:0
   ~col_spacings:0
   ~homogeneous:true
-  ~packing:(base#attach ~left:0 ~top:1) ()
+  ~packing:(base_area#attach ~left:0 ~top:1) ()
 
+let vMsgConnxDecnnx = GMisc.label
+  ~text:"connexion info"
+  ~width:100
+  ~height:50
+  ~show:true
+  ~packing:(comm_area#attach ~left:1 ~top:0) ()
 
 let deconnexion_msg () = print_endline "deconnexion"
 let envoyer_placement_msg () = print_endline "placement envoyer"
@@ -92,11 +109,25 @@ let afficher_tirage largeur str_table =
       ~packing:( vtirage#attach ~left:(i mod largeur) ~top:(i / largeur)) ()
     and markup = Printf.sprintf "<big>%s</big>" sym in
     ignore (GMisc.label ~markup ~packing:button#add ())
-  ) str_table
+    ) str_table
+
+(*service*)
+let afficher_msg_lblConnexion msg =
+  Printf.printf "interface:connexion\n"; flush(stdout); 
+  vMsgConnxDecnnx#set_text msg
+
+(*service*)s
+let afficher_msg_lblDeconnexion msg =
+  Printf.printf "interface:deconnexion\n"; flush(stdout); 
+  vMsgConnxDecnnx#set_text msg                        
+                       
 let _ =
   afficher_plateau 4 str_placement;
   afficher_tirage 7 str_tirage;
   window#connect#destroy ~callback:GMain.quit;
   window#show ();
+  (*Thread.create afficher_msgConnxDecnnx  "working yeahh!!";*)
   GMain.main ()
+
+             (*end;;*)
 

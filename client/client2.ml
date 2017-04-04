@@ -4,7 +4,7 @@
 -methode pour parser protocol //DONE
 -recuperation des donnees entree par utilisateurs et conversion en protocol string
  *)
-
+(*open InterfaceGraphique;;*)
 let pseudo = ref "";;
 let sock = ThreadUnix.socket Unix.PF_INET Unix.SOCK_STREAM 0;;
 let quit = ref false;;
@@ -47,10 +47,12 @@ let c_temps = ref "";;
   let proto_session () =
     (*TODO*)
     ();;
+  (*let module InterfaceGraphique = (InterfaceGraphique:INTERFACE);*)
   let proto_deconnexion user =
     (*TODO*)
-        Printf.printf "DECONNEXION\n";flush(stdout);
-        Printf.printf "user= %s\n" user ;flush(stdout)
+        Printf.printf "client:DECONNEXION\n";flush(stdout);
+        Printf.printf "client:user= %s\n" user ;flush(stdout);
+        InterfaceGraphique.afficher_msg_lblConnexion "DECONNEXION"
         ;;
 
   let proto_bienvenue placement tirage  scores phase temps=
@@ -74,8 +76,11 @@ let c_temps = ref "";;
   ;;
   let proto_connecte user =
     (*TODO*)
-    Printf.printf "CONNECTE\n";flush(stdout);
-    Printf.printf "user= %s\n" user ;flush(stdout);
+    (*Printf.printf "CONNECTE\n";flush(stdout);
+    Printf.printf "user= %s\n" user ;flush(stdout);*)
+    Printf.printf "client:DECONNEXION\n";flush(stdout);
+    Printf.printf "client:user= %s\n" user ;flush(stdout);
+    InterfaceGraphique.afficher_msg_lblConnexion "DECONNEXION"
   ;;
   let proto_connexion user =
     "CONNEXION/" ^ user ^ "/\n"

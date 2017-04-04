@@ -1,7 +1,0 @@
-let parsing_protocol proto =
-  Printf.printf "protocol:%s" proto;
-  let pattern "[a-zA-Z0-9_]+/" in 
-  let proto_name = Str.matched_string
-                     (Str.search_forward pattern proto 0) in
-  Printf.printf proto_name
-;;

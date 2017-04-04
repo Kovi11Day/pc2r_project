@@ -1,5 +1,0 @@
-(*ocamlc -o testArray.exe -thread -custom unix.cma threads.cma str.cma testArray.ml -cclib -lthreads -cclib -lunix *)
-
-let str_recu = "abcdefghi";;
-
-let 
