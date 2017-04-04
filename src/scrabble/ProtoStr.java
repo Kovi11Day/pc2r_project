@@ -81,7 +81,5 @@ public class ProtoStr {
 	public static String RFIN (){
 		return "RFIN/\n";
 	}
-	public static String RATROUVE (String user){
-		return "RATROUVE/" + user + "/\n";
-	}
+
 }

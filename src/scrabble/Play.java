@@ -21,14 +21,13 @@ public class Play extends Thread{
 	public Play (Serveur serv,Socket client){
 		motsJoueur = new HashSet<String>();
 		 score = 0;
-		protocole = new ProtoStr(out);
 		this.serv = serv;
 		this.client = client;
 		try {
 			this.out = new PrintStream(client.getOutputStream());
 			this.in = new BufferedReader(new InputStreamReader
 					(client.getInputStream()));
-			
+			protocole = new ProtoStr(out);
 		} catch (IOException e) {
 			
 			e.printStackTrace();
@@ -92,7 +91,7 @@ public class Play extends Thread{
 	public void trouve(String placement){/*TODO*/
 		//verifier mot valide
 		//si non ...
-<<<<<<< HEAD
+//<<<<<<< HEAD
 		//si oui notifier serveur
 		if(!positionLettre(placement)){
 			protocole.RINVALIDE(Raison.POS,"");
@@ -117,7 +116,7 @@ public class Play extends Thread{
 			}
 			
 		}
-		Sync.notify(serveur.getCondControlleurEnAttente());
+		Sync.notify(serv.getCondControlleurEnAttente());
 
 	}
 	

@@ -9,59 +9,43 @@ let window = GWindow.window
   ~title:"Scrabble" ()
 
 (*conteneur base de la fenetre (window peut contenir un seul enfant!)*)
-let base = GPack.box `HORIZONTAL (*renommer jeu*)
+(*let base2 = GPack.vbox (*renommer jeu*)
   ~spacing:30
   ~border_width:10
-  ~packing:window#add ()
-
-  (*conteneur base de la fenetre (window peut contenir un seul enfant!)*)
-(*let base = GPack.layout
-  ~border_width:10
   ~packing:window#add ()*)
-(* Insertion de barres de défilement. *)
-  (*
-let scroll = GBin.scrolled_window
-  ~height:600
-  ~hpolicy:`ALWAYS
-  ~vpolicy:`ALWAYS
-  ~packing:base#add ()
-   *)
-(*conteneur pour grille de placement*)
-(*let hbox = GPack.hbox
-             ~border_width:10
-             ~packing:base#add ()*)
-let bplacement = GPack.hbox   ~packing:base#pack ()
+
+let base = GPack.table
+  ~columns:2
+  ~rows:2             
+  ~row_spacings:20
+  ~col_spacings:20
+  ~homogeneous:true
+  ~packing:window#add()  
+
+
 let vplacement = GPack.table
   ~columns:3
   ~rows:3
   ~row_spacings:0
   ~col_spacings:0
-  ~homogeneous:true
-  ~packing:bplacement#add ()
+  ~homogeneous:true 
+  ~packing:(base#attach ~left:0 ~top:0) ()
+   (* in base#attach ~left:0 ~top:0 (vplacement#corerce)*)
 
   
 (*conteneur pour grille de tirage*)
-let btirage = GPack.hbox   ~packing:base#pack ()
+
 let vtirage = GPack.table
   ~columns:7
   ~rows:1
   ~row_spacings:0
   ~col_spacings:0
   ~homogeneous:true
-  ~packing:btirage#add ()
-  
+  ~packing:(base#attach ~left:0 ~top:1) ()
 
-
-(* Un conteneur spécialement conçu pour les boutons. Essayez de remplacer 
- * `SPREAD par `EDGE pour voir ce que ça fait... *)
-(*let bbox = GPack.button_box `HORIZONTAL
-  ~layout:`SPREAD
-  ~packing:(base#pack ~expand:false) ()*)
 
 let deconnexion_msg () = print_endline "deconnexion"
 let envoyer_placement_msg () = print_endline "placement envoyer"
-(*quand placement envoyer, grille placement et grille tirage se reinitialise
-et l'ecran reste active ou grise en fonc de la pjase rec ou sou*)
 let envoyer_placement_msg () = print_endline "envoyer"
                                              
 (*
@@ -89,24 +73,29 @@ let strToPlacement str =
       done;
       arr
 
-let str_placement = strToPlacement "abcdefghijkl"
+let str_placement = strToPlacement "ab defghijkl"
 let str_tirage = strToPlacement "lettres"
-(* Le conteneur GPack.table (GtkTable) est rempli : chaque case reçoit un bouton
- * contenant un symbole du tableau < symbols > défini ci-dessus. Le symbole est
- * inséré dans une étiquette (GtkLabel) pour pouvoir utiliser les balises Pango
- * (notamment <big> et </big> qui augmentent la taille du texte). *)
-let afficher_table largeur str_table=
+
+let afficher_plateau largeur str_table =
   Array.iteri (fun i sym ->
     let button = GButton.button 
       ~relief:`NONE 
-      ~packing:(vplacement#attach ~left:(i mod largeur) ~top:(i / largeur)) ()
+      ~packing:( vplacement#attach ~left:(i mod largeur) ~top:(i / largeur)) ()
     and markup = Printf.sprintf "<big>%s</big>" sym in
     ignore (GMisc.label ~markup ~packing:button#add ())
   ) str_table
 
+let afficher_tirage largeur str_table =
+  Array.iteri (fun i sym ->
+    let button = GButton.button 
+      ~relief:`NONE 
+      ~packing:( vtirage#attach ~left:(i mod largeur) ~top:(i / largeur)) ()
+    and markup = Printf.sprintf "<big>%s</big>" sym in
+    ignore (GMisc.label ~markup ~packing:button#add ())
+  ) str_table
 let _ =
-  afficher_table 3 str_placement;
-  afficher_table 7 str_tirage;
+  afficher_plateau 4 str_placement;
+  afficher_tirage 7 str_tirage;
   window#connect#destroy ~callback:GMain.quit;
   window#show ();
   GMain.main ()
