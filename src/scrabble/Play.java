@@ -92,6 +92,7 @@ public class Play extends Thread{
 	public void trouve(String placement){/*TODO*/
 		//verifier mot valide
 		//si non ...
+<<<<<<< HEAD
 		//si oui notifier serveur
 		if(!positionLettre(placement)){
 			protocole.RINVALIDE(Raison.POS,"");
@@ -116,7 +117,8 @@ public class Play extends Thread{
 			}
 			
 		}
-		
+		Sync.notify(serveur.getCondControlleurEnAttente());
+
 	}
 	
 	public boolean connexion(){
@@ -133,15 +135,19 @@ public class Play extends Thread{
 						protocole.REFUS();
 						//stringToClient("REFUS/\n");						
 					}else{
-						
 						String tirage = new String(serv.getTirage());
 						String plateau = new String(serv.getPlateau());
 					
 						DataUser u = new DataUser(this,pseudo);
 						this.user = u;
 						serv.getUsers().put(pseudo,u);
+
 						protocole.BIENVENUE(plateau, tirage, serv.scoresString(), serv.getPhase(), serv.getTemps());
 						serv.signalementC(u);
+
+					     
+						Sync.notify(serv.getCondNbJoueurs());
+
 						return true;
 					}
 				}else{//stringToClient("REFUS/\n");
@@ -157,8 +163,9 @@ public class Play extends Thread{
 	//deconecte user et envoi le signale a tous les autres de cette deconexion
 	public void deconnexion(DataUser user){
 		serv.getUsers().remove(user.getPseudo());
-		serv.signalementD(user);
-		
+		if (serv.getNbJoueurs() == 0)
+			Sync.notify(serv.getCondControlleurEnAttente());
+		serv.signalementD(user); //proto_DECONNEXION
 	}
 	//verifie si mot est dans le dico
 	public boolean wordInDictionary(String mot){

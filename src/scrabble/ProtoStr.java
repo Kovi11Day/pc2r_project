@@ -78,4 +78,10 @@ public class ProtoStr {
 		out.println(s);
 		out.flush();
 	}
+	public static String RFIN (){
+		return "RFIN/\n";
+	}
+	public static String RATROUVE (String user){
+		return "RATROUVE/" + user + "/\n";
+	}
 }

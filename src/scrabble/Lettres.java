@@ -69,7 +69,14 @@ public class Lettres {
 		}
 		return result.toCharArray();
 	}
-	
+	public int calculerScore (String mot){
+		int somme = 0;
+
+		for (int i = 0; i < mot.length(); i++){
+			somme += points.get(String.valueOf(mot.charAt(i)));
+		}
+ 		return somme;
+	}
 	public String tirageToStr(char[] pick){
 		return String.valueOf(pick);
 	}
@@ -84,7 +91,13 @@ public class Lettres {
 	
 	public static void main (String[] args){
 		Lettres lettres = new Lettres();
+		/*
 		while (lettres.frequence.size() != 0)
 			System.out.println(String.valueOf(lettres.piocher(20)));
+			*/
+		String mot = lettres.tirageToStr(lettres.piocher(4));
+		System.out.println("mot:" + mot);
+
+		System.out.println("mot:" + mot + " score:" + lettres.calculerScore(mot));
 	}
 }
