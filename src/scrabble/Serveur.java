@@ -114,7 +114,7 @@ public class Serveur extends Thread{
 		Iterator<DataUser> i = usersList.iterator();
 		while(i.hasNext()){
 			u = i.next();
-			s+= u.getPseudo()+"*"+u.getScore();
+			s+= u.getPseudo()+"*"+u.getScore()+"*";
 		
 		}
 		return s;	

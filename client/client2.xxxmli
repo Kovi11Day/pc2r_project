@@ -1,0 +1,4 @@
+module type CLIENT =
+  sig
+    val main : unit
+  end;;

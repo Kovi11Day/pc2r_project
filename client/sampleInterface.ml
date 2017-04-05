@@ -1,5 +1,5 @@
 (*ocamlfind ocamlc -w -g -package lablgtk2 -linkpkg sampleInterface.ml -o sampleInterface*)
-let _ = GMain.init ()
+let _ = GMain.init ();;
 
 (* Fenêtre principale (non redimensionnable). *)
 let window = GWindow.window 
@@ -76,9 +76,10 @@ let init_table () =
     ignore (GMisc.label ~markup ~packing:button#add ())
   ) symbols
 
-let _ =
+let gmainmain () =
   init_table ();
   window#connect#destroy ~callback:GMain.quit;
   window#show ();
-  GMain.main ()
-
+  GMain.main ();;
+  
+  gmainmain ();;
