@@ -4,16 +4,40 @@
 -methode pour parser protocol //DONE
 -recuperation des donnees entree par utilisateurs et conversion en protocol string
  *)
-
+(*open InterfaceGraphique;;*)
 let pseudo = ref "";;
 let sock = ThreadUnix.socket Unix.PF_INET Unix.SOCK_STREAM 0;;
 let quit = ref false;;
 let pret_ecoute_serv = ref false;;
+(*vraiment necessaire?*)
 let c_placement = ref "";;
 let c_tirage = ref "";;
 let c_scores = ref "";;
 let c_phase = ref "";;
 let c_temps = ref "";;
+
+(*---------utils--------------*)
+    let rec to_str lst str n =
+    if (List.length lst) = 0
+    then str
+    else
+      if n=0
+      then to_str (List.tl lst) str 1
+      else
+        to_str
+          (List.tl (List.tl lst))
+          (str ^ (List.hd lst) ^ ":" ^ (List.hd (List.tl lst)) ^ "\n")
+          1
+  ;;
+    
+  let parse_scores scores =
+    let reg = Str.regexp "*" in
+    let lst = Str.split reg scores in
+    to_str lst "" 0;;
+
+    
+
+(*------------------------------*)
   let proto_bilan mot vainqueure score =
     (*TODO*)
     ();;
@@ -47,13 +71,15 @@ let c_temps = ref "";;
   let proto_session () =
     (*TODO*)
     ();;
+  (*let module InterfaceGraphique = (InterfaceGraphique:INTERFACE);*)
   let proto_deconnexion user =
-    (*TODO*)
-        Printf.printf "DECONNEXION\n";flush(stdout);
-        Printf.printf "user= %s\n" user ;flush(stdout)
+    Visu.update_lblMsgConnxDecnnx ("DECONNEXION:"^user);
+    Printf.printf "client:DECONNEXION\n";flush(stdout);
+    Printf.printf "client:user= %s\n" user ;flush(stdout)
         ;;
 
-  let proto_bienvenue placement tirage  scores phase temps=
+        let proto_bienvenue placement tirage  scores phase temps=
+          Visu.update_lblScores (parse_scores scores);
     Printf.printf "BIENVENUE\n";flush(stdout);
     Printf.printf "placement= %s\n" placement ;flush(stdout);
     Printf.printf "tirage= %s\n" tirage ;flush(stdout);
@@ -65,6 +91,7 @@ let c_temps = ref "";;
     c_scores := scores;
     c_phase := phase;
     c_temps := temps
+ 
   ;;
      
   let proto_refus () =
@@ -73,9 +100,12 @@ let c_temps = ref "";;
      exit 1
   ;;
   let proto_connecte user =
-    (*TODO*)
-    Printf.printf "CONNECTE\n";flush(stdout);
-    Printf.printf "user= %s\n" user ;flush(stdout);
+    (*Printf.printf "CONNECTE\n";flush(stdout);
+    Printf.printf "user= %s\n" user ;flush(stdout);*)
+    Printf.printf "client:CONNECTE\n";flush(stdout);
+    Printf.printf "client:user= %s\n" user ;flush(stdout);
+    Visu.update_lblMsgConnxDecnnx ("CONNETE:"^user);
+
   ;;
   let proto_connexion user =
     "CONNEXION/" ^ user ^ "/\n"
@@ -135,8 +165,8 @@ let c_temps = ref "";;
      Unix.close sock
   ;;
 
-
   let th = Thread.create serveur_A_InterfaceGraphique sock;;
+
   let send_server msg =
     let chan_out = Unix.out_channel_of_descr sock in
     ignore (output_string chan_out msg);
@@ -172,8 +202,10 @@ let c_temps = ref "";;
     let proto = proto_connexion user in
     send_server proto;
   ;;
+    
 
-  (*Tests*)
+  (*--------------------Tests----------------------------------*)
+
   let util1 (serv, port, pseudo) =
     (*Printf.printf "user: %s connecting\n" pseudo ; flush(stdout);*)
     connexion serv port pseudo;
@@ -203,8 +235,9 @@ let c_temps = ref "";;
       |some -> Printf.printf "jeu de test n'existe pas\n";flush(stdout)
   ;;
 
-    main ();;
+  (*main ();;*)
     
-
+  let test () =
+    Printf.printf "client2\n"; flush(stdout);;
               
  

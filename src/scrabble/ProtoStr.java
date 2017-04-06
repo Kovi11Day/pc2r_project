@@ -95,6 +95,7 @@ public class ProtoStr {
 		out.println(s);
 		out.flush();
 	}
+
 	
 	public void SFIN(){
 		String s = "SFIN/\n";
@@ -102,4 +103,5 @@ public class ProtoStr {
 		out.flush();
 	}
 	
+
 }

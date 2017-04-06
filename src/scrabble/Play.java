@@ -19,13 +19,14 @@ public class Play extends Thread{
 	
 	public Play (Serveur serv,Socket client){
 		//this.trouveRecherche = false;
+
 		this.serv = serv;
 		this.client = client;
 		try {
 			this.out = new PrintStream(client.getOutputStream());
 			this.in = new BufferedReader(new InputStreamReader
 					(client.getInputStream()));
-			
+			protocole = new ProtoStr(out);
 		} catch (IOException e) {
 			
 			e.printStackTrace();
@@ -243,6 +244,7 @@ public class Play extends Thread{
 			
 		}	
 		
+	
 	}
 	
 	public boolean connexion(){
