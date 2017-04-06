@@ -13,15 +13,12 @@ public class Play extends Thread{
 	private PrintStream out;
 	private BufferedReader in;
 	private ProtoStr protocole;
-	private HashSet<String> motsJoueur;
 	private boolean endPlay = false;
 	private DataUser user;
-	private int score;
+	//private boolean trouveRecherche;
 	
 	public Play (Serveur serv,Socket client){
-		motsJoueur = new HashSet<String>();
-		 score = 0;
-		protocole = new ProtoStr(out);
+		//this.trouveRecherche = false;
 		this.serv = serv;
 		this.client = client;
 		try {
@@ -33,6 +30,7 @@ public class Play extends Thread{
 			
 			e.printStackTrace();
 		}
+		protocole = new ProtoStr(out);
 		this.start();
 	}
 	
@@ -42,31 +40,105 @@ public class Play extends Thread{
 				//on peut faire le close au bout de 3 refus consecutif par exemple
 				//pour l'instant j'ai laisse ca mais on poura modifier
 				client.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			} catch (IOException e) {}
 		}else{
 			String[] protocol;
-
+			
 			while(!endPlay){
-				protocol = protoRecu();
-
-				switch (protocol[0]){
-					case "SORT": sort(protocol[1]); break;
-					case "TROUVE": trouve(protocol[1]);break;
-					default: throw new RuntimeException ("server received "
-							+ "unknown protocol");
+				try {
+					//si un user s'est connecter et que le jeu est a la phase Rec ou
+					//Sou alors pas la peine qu'il fasse ces intructions
+					if(user.getPhaseConexion().equals(Phase.DEB)){
+					//attend de recevoir la notification de recherche
+						System.out.println("play attend la phase de recherche");
+						Sync.wait(serv.getRecherche());
+						System.out.println("play: fin de  l'attente phase de recherche");
+					}
+					
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+				while(true){
+					System.out.println("play: pret a  lire protocole recherche");
+					protocol = protoRecu();
+					System.out.println("play a lu le protocole recherche");
+					switch (protocol[0]){
+					case "SORT": sort(protocol[1]);break;
+					//c'est play qui modifie la phase donc mutex pour garder la coherence
+					case "TROUVE": synchronized (serv.getPhase()) {
+						System.out.println("play appelle trouverRech");
+							trouverRech(protocol[1]);//synchro ici
+							System.out.println("fin de l'apelle a trouver trouverRech");
+						
+						};break;
+					default: 
+					
+					}
+					if(serv.getPhase()!=Phase.REC){
+						break;
+					}
+				
+				}
+				
+				
+					if(user.getPhaseConexion().equals(Phase.REC)||
+							user.getPhaseConexion().equals(Phase.DEB)){
+					
+						System.out.println("play :attend le signale de soumission");
+						try {
+							Sync.wait(serv.getSoum());
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						System.out.println("play:signale recu de soumission");
+					}
+				
+			
+			
+				//phase de soumission
+				while(true){
+					//la j'ai essayer de tester regulierement si la phase a 
+					//changer c vrai qu'il ya beaucoup de redondance, mais ej n'ai pas
+					//trouve d'autre moyen....
+					System.out.println("play est dans la phase de soumission");
+					synchronized (serv.getPhase()) {
+						if(!serv.getPhase().equals(Phase.SOU)){break;}
+						
+					}
+					protocol = protoRecu();
+					synchronized (serv.getPhase()) {
+						if(!serv.getPhase().equals(Phase.SOU)){break;}
+						
+					}
+					switch (protocol[0]){
+						case "SORT": sort(protocol[1]);break;
+						case "TROUVE": trouverSoum(protocol[1]);break;
+							
+						}
+					synchronized (serv.getPhase()) {
+						if(!serv.getPhase().equals(Phase.SOU)){break;}
+					}
+				}
+			
+				//phase de soumission fini	
+				try {
+					System.out.println("play: dans la phase bilan");
+					System.out.println("play: attend un signal de fin de bilan");
+					Sync.wait(serv.getBilan());
+					System.out.println("play a recu le signal de bilan");
+				} catch (InterruptedException e) {
+					
+					e.printStackTrace();
+		
 				}
 			}
 		}
+			
+			
 	}
+		
 	
-	// a retiré si tu aime la nouvel version de ProtoStr
-	/*public void stringToClient(String s){
-		System.out.println("protocol envoye:" + s);
-		out.println(s);
-		out.flush();
-	}*/
 	
 	public String[] protoRecu (){
 		String ligne = null;
@@ -78,22 +150,60 @@ public class Play extends Thread{
 		protocol = ligne.split("/");
 		return protocol;
 	}
+	
 	public void tour (){
 		//faire un nouveau tirage
 	}
 	
-	public void sort(String user){		
-		deconnexion(serv.getUsers().get(user));
-		serv.getUsers().remove(this.user.getPseudo());
+	//deconecte user et envoi le signale a tous les autres de cette deconexion
+	public void sort(String user){	
+		serv.getUsers().remove(user);
+		if (serv.getNbJoueurs() == 0)
+			Sync.notify(serv.getCondControlleurEnAttente());
+		serv.signalementD(user); //proto_DECONNEXION
 		//if nb serv.getUsers().size == 0; notify thread waiting on condition
 		this.endPlay = true;
 	}
 	
-	public void trouve(String placement){/*TODO*/
+	public void trouverRech(String placement){/*TODO*/
 		//verifier mot valide
 		//si non ...
-<<<<<<< HEAD
-		//si oui notifier serveur
+		
+		char[][] pClient;
+		try {
+			pClient = stringToPlateau(placement);
+			char[][] pServ = stringToPlateau(serv.getPlateau());
+			HashSet<String> mots = wordsMake(pClient, pServ);
+			boolean inDico = true;
+			for(String s:mots){
+				if(!wordInDictionary(s)){
+					inDico = false;
+				}
+			}
+			if(inDico == false){
+				protocole.RINVALIDE(Raison.DIC, "");
+			}
+			else{
+				user.setMots(mots);
+				user.setScore(calculeScore(mots)) ;
+				user.setPlateau(placement);
+				protocole.RVALIDE();
+				serv.signalementT(user);
+				System.out.println("trouverRech change la phase de rech a soum");
+				serv.setPhase(Phase.SOU);
+				System.out.println("play :notify le controleur pour la recherche");
+				Sync.notify(serv.getCondControlleurEnAttente());
+				System.out.println("play:fin notify  du le controleur pour la recherche");
+			}
+			} catch (PlateauException e) {
+				
+				e.printStackTrace();
+			}
+			
+		}	
+
+	
+	public void trouverSoum(String placement){
 		if(!positionLettre(placement)){
 			protocole.RINVALIDE(Raison.POS,"");
 		}
@@ -102,23 +212,37 @@ public class Play extends Thread{
 			try {
 				pClient = stringToPlateau(placement);
 				char[][] pServ = stringToPlateau(serv.getPlateau());
-				HashSet<String> mot = wordsMake(pClient, pServ);
-				if(calculeScore(mot)> score){
-					this.score = calculeScore(mot) ;
-					this.motsJoueur = mot;
-					protocole.RVALIDE();
-					serv.signalementT(user);
-				}else{
-					protocole.RINVALIDE(Raison.INF, "");
+				HashSet<String> mots = wordsMake(pClient, pServ);
+				boolean inDico = true;
+				for(String s:mots){
+					if(!wordInDictionary(s)){
+						inDico = false;
+					}
+				}
+				if(inDico == false){
+					protocole.RINVALIDE(Raison.DIC, "");
+				}
+				else{
+					
+					int score = calculeScore(mots) ;
+					if(score> user.getScore()){
+						protocole.RVALIDE();
+						user.setScore(calculeScore(mots)) ;
+						user.setMots(mots);
+						protocole.RVALIDE();
+						user.setPlateau(placement);
+					
+					}else{
+						protocole.RINVALIDE(Raison.INF, "");
+					}
 				}
 			} catch (PlateauException e) {
 				
 				e.printStackTrace();
 			}
 			
-		}
-		Sync.notify(serveur.getCondControlleurEnAttente());
-
+		}	
+		
 	}
 	
 	public boolean connexion(){
@@ -131,42 +255,47 @@ public class Play extends Thread{
 			}else{
 				if(connexion.length>1){
 					String pseudo = connexion[1];
-					if(serv.getUsers().containsKey(pseudo)){
-						protocole.REFUS();
-						//stringToClient("REFUS/\n");						
-					}else{
-						String tirage = new String(serv.getTirage());
-						String plateau = new String(serv.getPlateau());
-					
-						DataUser u = new DataUser(this,pseudo);
-						this.user = u;
-						serv.getUsers().put(pseudo,u);
+					synchronized (serv.getUsers()) {
+						if(serv.getUsers().containsKey(pseudo)){
+							protocole.REFUS();					
+						}else{
+							String tirage = new String(serv.getTirage());
+							String plateau = new String(serv.getPlateau());
+							DataUser u = new DataUser(this,pseudo,serv.getPhase());	
+							this.user = u;
+							serv.getUsers().put(pseudo,u);
+							String temps = String.valueOf(serv.temp());
+							protocole.BIENVENUE(plateau, tirage, serv.scoresString(), 
+							serv.getPhase(), temps);
+							serv.signalementC(u);
 
-						protocole.BIENVENUE(plateau, tirage, serv.scoresString(), serv.getPhase(), serv.getTemps());
-						serv.signalementC(u);
-
-					     
-						Sync.notify(serv.getCondNbJoueurs());
-
+							if(serv.getNbJoueurs()==1){
+								Sync.notify(serv.getCondNbJoueurs());
+								System.out.println("si nbjoueur=1 alors play envoi notify"
+										+ "au controlleur");
+							}
+						}
+							try {
+								
+								if(serv.getPhase().equals(Phase.DEB)){
+									System.out.println("play wait le signal debSession");
+									Sync.wait(serv.getdebSession());
+									System.out.println("play a recu signal debSession");
+								}
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
 						return true;
-					}
-				}else{//stringToClient("REFUS/\n");
+					
+				}else{
 					protocole.REFUS();
 				
 				}
 			}
-		/*} catch (IOException e) {
-			e.printStackTrace();*/
-		//}	
 		return false;	
 	}
-	//deconecte user et envoi le signale a tous les autres de cette deconexion
-	public void deconnexion(DataUser user){
-		serv.getUsers().remove(user.getPseudo());
-		if (serv.getNbJoueurs() == 0)
-			Sync.notify(serv.getCondControlleurEnAttente());
-		serv.signalementD(user); //proto_DECONNEXION
-	}
+	
 	//verifie si mot est dans le dico
 	public boolean wordInDictionary(String mot){
 		return  serv.wordInDictinary(mot);
@@ -224,14 +353,24 @@ public class Play extends Thread{
 				break;
 			}
 		}
-		System.out.println(pClient[c][l]);
 		if(!firstCharFind){
 			throw new PlateauException();
+		}if(c==14 && pClient[c-1][l]!=' '){
+				horizontal = true;
 		}
-		if(pClient[c-1][l]!=' '|| pClient[c+1][l]!= ' '){
+		if(c==0 && pClient[c+1][l]!=' '){
+			horizontal=true;
+		}
+		if(c>0 && c<14 && (pClient[c-1][l]!=' '|| pClient[c+1][l]!= ' ')){
 			horizontal = true;
 		}
-		if(pClient[c][l-1]!=' '|| pClient[c][l+1]!=' '){
+		if(l==14 && pClient[c][l-1]!=' '){
+			vertical = true;
+		}
+		if(l==0 && pClient[c][l+1]!=' '){
+			vertical=true;
+		}
+		if(l>0 && l<14 && (pClient[c][l-1]!=' '|| pClient[c][l+1]!=' ')){
 			vertical=true;
 		}
 		
@@ -289,7 +428,7 @@ public class Play extends Thread{
 			}
 		}
 		int j=c+1;
-		while(pClient[j][l]!=' ' && j<15){
+		while(j<15 && pClient[j][l]!=' '){
 			mot+=pClient[j][l];
 			j++;
 		}
@@ -302,9 +441,15 @@ public class Play extends Thread{
 	}
 	
 	public int calculeScore(HashSet<String> listWords){
-		//TODO
-		// calcule les points fait avec cette liste de mot
-		return 0;
+		int score = 0;
+		for(String s: listWords){
+			score += serv.getPool().calculerScore(s);
+		}
+		return score;
+	}
+	
+	public void setEndPlay(){
+		endPlay = true;
 	}
 	
 	

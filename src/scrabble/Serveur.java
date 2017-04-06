@@ -7,11 +7,13 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Scanner;
 import java.util.ArrayList;
+import java.util.TimeZone;
 
 
 public class Serveur extends Thread{
@@ -27,18 +29,34 @@ public class Serveur extends Thread{
 	//j'ai fait les fonction pour convertir string en char[][] et inversement
 	private String plateau;
 	//voir explication dans la classe ControlleurJeu
-	private Integer condControlleurEnAttente = new Integer(0);
-	private Integer condNbJoueurs = new Integer(0);
+	private Long condControlleurEnAttente = new Long(0);
+	private Long condNbJoueurs = new Long(0);
 	private char[] tirage;
 	private Phase p;
-	private int temps;
-	//private int nbJoueurs;
+	private Long connexion ;
+	private Long debSession;
+	private Long recherche;
+	private Long soumission ;
+	private Long bilan;
+	//sj'ai ajouter soum car je ne sais pas pourquoi le monitor avec soumission
+	//ne marchai pas ...
+	private Long soum;
+	private ControlleurJeu cJeu;
+
+	
 	//soi le serveur a le dico soit c chaque thread Play qui a un dico
 	//j'ai choisit Serveur qui a le dico mais dit moi si c'est mieu que 
 	//ca soi Play qui possede le dico
 	private Dictionnaire dico;
 	
 	public Serveur(){
+		 connexion = new Long(0);
+		 debSession = new Long(0);
+		 recherche = new Long(0);
+		soumission = new Long(0);
+		 bilan = new Long(0);
+		 soum = new Long(0);
+		 //finSession = new Long(0);
 		this.users = new HashMap<String,DataUser>();
 		this.tirage = new char[7];
 		this.pool = new Lettres();
@@ -48,14 +66,14 @@ public class Serveur extends Thread{
 		//j'initialise mon plateau a un plateau vide
 		//pareil pour tirage, mais je crois que c'est pas forcement necessaire
 		
-		inisializeTirage();
+		//inisializeTirage();
 
 		//pour la phase j'ai fait un ENUM car dans l'ennonce il nous ont donné 
 		//une liste de phase
 		p = Phase.DEB;
 		dico = new Dictionnaire();
-		temps = 0;
-		new ControlleurJeu(this);
+		initJeu();
+		cJeu = new ControlleurJeu(this);
 		try {
 			this.ecoute = new ServerSocket(port);
 			
@@ -70,15 +88,16 @@ public class Serveur extends Thread{
 		//TODO: initialise scores
 		inisializeTirage();
 		this.pool.initialise(Lettres.poolFrancais());
+		//this.tirage= this.pool.piocher(7);
 	}
 	
 	public void run (){
+		
 		int atPre_nbJoueurs;
 		while(true){
 			try {
 				Socket client = ecoute.accept();
 				Play p = new Play(this,client);
-				//Jouer j = new Jouer(this);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -88,25 +107,36 @@ public class Serveur extends Thread{
 	public Phase getPhase(){
 		return p;
 	}
+	
+	public Long getSoum(){
+		return soum;
+	}
+	
+	//chaque fois que je change de phase je remet le time a jour
 	public void setPhase(Phase p){
 		this.p = p;
-	}
-	public int getTemps(){
-		return temps;
+		if(getPhase().equals(Phase.DEB)){
+			debSession = System.currentTimeMillis();
+			
+		}
+		if(getPhase().equals(Phase.SOU)){
+			soumission = System.currentTimeMillis();
+			
+		}
+		if(getPhase().equals(Phase.REC)){
+			recherche = System.currentTimeMillis();
+			
+		}
+		
+		
 	}
 
-// redondant? a retire peut etre parce que dans Play j'ai la meme 	
-	public void stringToClient(PrintStream out,String s){
-		out.println(s);
-		out.flush();
-	}
 	
 	public String getPlateau(){
 		return plateau;
 	}
 	
-//pour calcule le score de chacun des users et c'est la ou j'ai eu besoin
-	//d'une liste, parce que sa avait l'air compliquer de parcourir un Hash
+//pour calcule le score de chacun des users 
 	public String scoresString(){
 		Collection<DataUser> usersList =  users.values();
 		String s = ""+usersList.size()+"*";
@@ -114,7 +144,7 @@ public class Serveur extends Thread{
 		Iterator<DataUser> i = usersList.iterator();
 		while(i.hasNext()){
 			u = i.next();
-			s+= u.getPseudo()+"*"+u.getScore();
+			s+= u.getPseudo()+"*"+u.getScore()+"*";
 		
 		}
 		return s;	
@@ -129,22 +159,15 @@ public class Serveur extends Thread{
 				u.getPlay().getProtoStr().CONNECTE(userConnect);
 		}
 	}
-	
-	public void signalementD(DataUser user){
-		String userDisconect = user.getPseudo();
+	//signalement deconnexion de user
+	public void signalementD(String user){
 		Collection<DataUser> usersList = users.values();
 		for(DataUser u:usersList){
-			//u.getPlay().stringToClient("DECONNEXION/"+userDisconect);
-			u.getPlay().getProtoStr().DECONNEXION(userDisconect);
-		/*
-		for(DataUser u: this.users.values()){
-			if(!u.getPseudo().equals(userConnect)){
-				u.getPlay().stringToClient(ProtoStr.CONNECTE(userConnect));
-			}
-			*/
+			u.getPlay().getProtoStr().DECONNEXION(user);
+
 		}
 	}
-	
+	//signalement d'un mot trouver par user
 	public void signalementT(DataUser user){
 		Collection<DataUser> usersList = users.values();
 		for(DataUser u:usersList){
@@ -158,8 +181,8 @@ public class Serveur extends Thread{
 	public void tour (){
 		String plateau = String.valueOf(this.getPlateau());
 		String tirage = this.pool.tirageToStr(this.pool.piocher(7));
+		this.tirage = tirage.toCharArray();
 		for (DataUser user: this.users.values()){
-			//user.getPlay().stringToClient(ProtoStr.TOUR(plateau, tirage));
 			user.getPlay().getProtoStr().TOUR(plateau, tirage);
 		}
 	}
@@ -171,7 +194,7 @@ public class Serveur extends Thread{
 	public boolean nouveauTirage(){
 		if (this.pool.isEmpty())
 			return false;
-		this.tirage = this.pool.piocher(7);
+		//this.tirage = this.pool.piocher(7);
 		return true;
 	}
 	public char[][] inisializePlateau(char[][] plateau){
@@ -193,7 +216,6 @@ public class Serveur extends Thread{
 	public void newSession(){
 		Collection<DataUser> usersList = users.values();
 		for(DataUser u: usersList){
-			//u.getPlay().stringToClient("SESSION/");
 			u.getPlay().getProtoStr().SESSION();
 			
 		}
@@ -203,8 +225,8 @@ public class Serveur extends Thread{
 		Collection<DataUser> usersList = users.values();
 		String bilan = scoresString();
 		for(DataUser u: usersList){
-			//u.getPlay().stringToClient("VAINQUEUR/"+bilan);
 			u.getPlay().getProtoStr().VAINQUEUR(bilan);
+			u.getPlay().setEndPlay();
 			
 		}
 	}
@@ -215,9 +237,12 @@ public class Serveur extends Thread{
 	public void Jeu (){
 		newSession();
 	}
-	
+	 
+	//cherche si le mot est dans notre dico.txt
 	public boolean wordInDictinary(String mot){
-		String x = Character.toString(mot.charAt(0));
+		//convertir les lettre en minuscule
+		String lowerMot = mot.toLowerCase();
+		String x = String.valueOf(lowerMot.charAt(0));
 		File di = dico.getDico().get(x);
 		Scanner sc = null;
 		try {
@@ -225,7 +250,7 @@ public class Serveur extends Thread{
 			String ligne;
 			while(sc.hasNext()){
 				ligne = sc.nextLine();
-				if( ligne.equals(mot)){
+				if( ligne.equals(lowerMot)){
 					return true;
 				}
 			}
@@ -236,10 +261,10 @@ public class Serveur extends Thread{
 		return false;
 	}
 
-	public Integer getCondControlleurEnAttente	(){
+	public Long getCondControlleurEnAttente	(){
 		return this.condControlleurEnAttente;
 	}
-	public Integer getCondNbJoueurs(){
+	public Long getCondNbJoueurs(){
 		return this.condNbJoueurs;
 	}
 	public Lettres getPool(){
@@ -273,6 +298,97 @@ public class Serveur extends Thread{
 			}
 		}
 		return plateauString;
+	}
+	//signaller qu'on passe a la phase de soumission au users
+	public void signaleSoumission(){
+		Collection<DataUser> usersList =  users.values();
+		for(DataUser u: usersList){
+			u.getPlay().getProtoStr().SOUMISSION();
+		}
+	}
+	//pour recupere le temps du premier connecter --> a retiré je crois 
+	public Long Connexion(){
+		return connexion;
+	}
+	//recupere la date de demarage de session
+	public Long getdebSession(){
+		return debSession;
+	}
+	public Long getBilan(){
+		return bilan;
+	}
+	public Long getRecherche(){
+		return recherche;
+	}
+	/*public Long getSoumission(){
+		return soumission;
+	}*/
+	
+	//calcule du meilleur score et met a jour le plateau
+	public void bilan(){
+		Collection<DataUser> usersList =  users.values();
+		int score = -1;
+		DataUser better = null ;
+		for(DataUser u: usersList){
+			if(u.getScore()>score){
+				score = u.getScore();
+				better = u;
+			}			
+		}
+		String mot = (String) better.getMots().toArray()[0];
+		
+		
+		for(DataUser u: usersList){
+			u.getPlay().getProtoStr().BILAN(mot, better.getPseudo(), scoresString());
+		}
+		this.plateau = better.getPlateauClient();
+	}
+	//addictionne le score avant de passé au tour suivant
+	public void addScore(){
+		Collection<DataUser> usersList =  users.values();
+		for(DataUser u: usersList){
+			u.addScore();
+		}
+	}
+	
+	//pour calculer le temps restant dans la phase concerné
+	public Long temp(){
+		long now = 0 ;
+		
+		if(p.equals(Phase.REC)){
+			now = System.currentTimeMillis();
+			now = now-recherche;
+			now = now/1000;
+			return ( cJeu.getDelay_ph_recherche()-now);
+		}
+		if(p.equals(Phase.SOU)){
+			now = System.currentTimeMillis();
+			now = now-soumission;
+			now = now/1000;
+			return  (cJeu.getDelay_ph_soumission()-now);
+			
+		}
+		//pour la phase de Deb j'ai laissé 0 par defaut ....
+		if(p.equals(Phase.DEB)){
+			return now;
+		}
+		return now;
+		
+	}
+	//quand on passe au tour suivant je reinitialise la phase de Connexion
+	//des user a Deb
+	public void userAjour(){
+		Collection<DataUser> usersList =  users.values();
+		for(DataUser u: usersList){
+			u.setPhaseConexion();
+		}
+	}
+	
+	public void Sfin(){
+		Collection<DataUser> usersList =  users.values();
+		for(DataUser u: usersList){
+			u.getPlay().getProtoStr().SFIN();
+		}
 	}
 	
 	

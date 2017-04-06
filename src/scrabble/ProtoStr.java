@@ -7,7 +7,7 @@ public class ProtoStr {
 	public ProtoStr(PrintStream out){
 		this.out=out;
 	}
-	public  void BIENVENUE (String plateau, String tirage, String scores, Phase phase, int temps){
+	public  void BIENVENUE (String plateau, String tirage, String scores, Phase phase, String temps){
 		String s = "BIENVENUE/" + plateau + "/" + tirage + "/" + scores + "/" + phase + "/" + temps + "/\n";
 		out.println(s);
 		out.flush();
@@ -55,7 +55,7 @@ public class ProtoStr {
 	}
 	
 	public void RINVALIDE(Raison r,String rai){
-		String s = "RINVALIDE/"+r+" "+rai+"/\n";
+		String s = "RINVALIDE/"+r+"/"+rai+"/\n";
 		out.println(s);
 		out.flush();
 		
@@ -74,14 +74,32 @@ public class ProtoStr {
 	}
 	
 	public void VAINQUEUR(String bilan){
-		String s = "VAINQUEUR/+bilan"+"/\n";
+		String s = "VAINQUEUR/"+bilan+"/\n";
 		out.println(s);
 		out.flush();
 	}
-	public static String RFIN (){
-		return "RFIN/\n";
+	public void RFIN (){
+		String s = "RFIN/\n";
+		out.println(s);
+		out.flush();
 	}
-	public static String RATROUVE (String user){
-		return "RATROUVE/" + user + "/\n";
+	
+	public void SOUMISSION(){
+		String s = "SOUMISSION/\n";
+		out.println(s);
+		out.flush();
 	}
+	
+	public void BILAN(String mot,String vainqueur,String scores){
+		String s = "BILAN/"+mot+"/"+vainqueur+"/"+scores+"/\n";
+		out.println(s);
+		out.flush();
+	}
+	
+	public void SFIN(){
+		String s = "SFIN/\n";
+		out.println(s);
+		out.flush();
+	}
+	
 }

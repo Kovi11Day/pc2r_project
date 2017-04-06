@@ -71,7 +71,7 @@ public class Lettres {
 	}
 	public int calculerScore (String mot){
 		int somme = 0;
-
+		System.out.println("mooo"+mot);
 		for (int i = 0; i < mot.length(); i++){
 			somme += points.get(String.valueOf(mot.charAt(i)));
 		}

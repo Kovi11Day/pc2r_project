@@ -1,19 +1,21 @@
 package scrabble;
 
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 //TODO: make class throw exception
 public class MyTimer extends Thread{
-	private Integer condTimer;
+	private Long condTimer;
 	private boolean isCancelled;
 	private boolean destroy;
 	private boolean isBusy;
-	private Integer condToNotify;
+	private Long condToNotify;
 	private long delay;
 	
-	public MyTimer(Integer condToNotify) {
-		this.condTimer = new Integer(0);
+	public MyTimer(Long condToNotify) {
+		this.condTimer = new Long(0);
 		this.isCancelled = false;
 		this.destroy = false;
 		this.isBusy = false;
@@ -30,18 +32,26 @@ public class MyTimer extends Thread{
 			isBusy = true;
 			try {
 				//System.out.println("in timing state");
+				//attente active avec sleep? wait(long) meilleure?
 				sleep(delay); //TIMING
-			} catch (InterruptedException e) {}
-			if (!isCancelled){
+				isBusy=false;
+				Sync.notify(condToNotify);
+				delay= 0;
+			} catch (InterruptedException e) {
+				if (!isCancelled){
 				//System.out.println("in task state: action");
-				Sync.notify(condToNotify);//TASK
-			}else{
+					isBusy=false;
+					Sync.notify(condToNotify);//TASK
+				//condToNotify.notifyAll();
+				}else{
 				//System.out.println("in task state: action cancelled");
-				isCancelled = false; 
+					isBusy = false;
+					isCancelled = false; 
+				}
+				delay = 0;
+				}
+			
 			}
-			delay = 0;
-			isBusy=false;
-		}	
 	}
 	//can only be called if thread isNotBusy
 		public void activateMillis(long millis) throws MyTimerException{
@@ -49,7 +59,7 @@ public class MyTimer extends Thread{
 				throw new MyTimerException();
 			this.delay = millis;
 			Sync.notify(condTimer);
-			//this.condTimer.notify();
+			
 		}
 	//can only be called if thread isNotBusy
 	public void activateMins(long mins) throws MyTimerException{
@@ -57,7 +67,7 @@ public class MyTimer extends Thread{
 			throw new MyTimerException();
 		this.delay = TimeUnit.MINUTES.toMillis(mins);
 		Sync.notify(condTimer);
-		//this.condTimer.notify();
+		
 	}
 	//can only be called if thread isNotBusy
 	public void activateSecs(long secs) throws MyTimerException{
@@ -80,7 +90,7 @@ public class MyTimer extends Thread{
 		isCancelled = true; //assurer qu'il ne fait pas notify
 		Sync.notify(condTimer);
 	}
-	public Integer getCondAttente(){
+	public Long getCondAttente(){
 		return this.condTimer;
 	}
 	
@@ -88,7 +98,7 @@ public class MyTimer extends Thread{
 		return this.isBusy;
 	}
 	//test timer
-	public static void main(String[] args){
+	/*public static void main(String[] args){
 		Integer action = new Integer(1);
 		Calendar cal = Calendar.getInstance();
 		MyTimer timer = new MyTimer(action);
@@ -113,6 +123,6 @@ public class MyTimer extends Thread{
 		} catch (MyTimerException e) {	timer.destroy();e.printStackTrace();}
 			catch (InterruptedException e) {	timer.destroy(); e.printStackTrace();}
 
-		}	
+		}	*/
 
 }
